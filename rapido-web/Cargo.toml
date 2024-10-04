@@ -33,7 +33,7 @@ include_dir = "0.7"
 uuid = { version = "1.6.0", features = ["v4"] }
 tracing-subscriber = { version = "0.3.17", features = ["env-filter", "json"] }
 
-rapido_core = { path="../rapido-core" }
+rapido-core = { path="../rapido-core" }
 
 [[bin]]
 name = "rapi-cli"

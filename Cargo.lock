@@ -3144,6 +3144,17 @@ name = "rapido"
 version = "0.0.0"
 
 [[package]]
+name = "rapido-core"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "sea-query",
+ "serde",
+ "serde_json",
+ "sqlx",
+]
+
+[[package]]
 name = "rapido-web"
 version = "0.1.0"
 dependencies = [
@@ -3154,7 +3165,7 @@ dependencies = [
  "insta",
  "loco-rs",
  "migration",
- "rapido_core",
+ "rapido-core",
  "rstest",
  "sea-orm",
  "serde",
@@ -3165,17 +3176,6 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "validator",
-]
-
-[[package]]
-name = "rapido_core"
-version = "0.1.0"
-dependencies = [
- "async-std",
- "sea-query",
- "serde",
- "serde_json",
- "sqlx",
 ]
 
 [[package]]
