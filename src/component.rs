@@ -1,13 +1,11 @@
 use std::collections::HashMap;
 
-use sea_query::{ColumnDef, ColumnType, DynIden, Iden, IdenStatic, IntoIden, StringLen};
+use sea_query::{ColumnDef, ColumnType, Iden, IntoIden, StringLen};
 use serde::Deserialize;
-
-
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Component {
-    #[serde(rename="collectionName")]
+    #[serde(rename = "collectionName")]
     pub collection_name: String,
 
     pub info: Info,
@@ -22,22 +20,35 @@ impl Iden for Component {
     }
 }
 
+#[derive(Debug, Deserialize, Clone)]
+pub struct AttributeInteger {
+    pub min: Option<u32>,
+    pub max: Option<u32>,
+}
 
-#[derive(Debug,Deserialize, Clone)]
-#[serde(tag="type", rename_all="lowercase")]
+#[derive(Debug, Deserialize, Clone)]
+pub struct AttributeString {
+    #[serde(rename = "maxLength")]
+    max_length: Option<u32>,
+
+    #[serde(rename = "minLength")]
+    min_length: Option<u32>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(tag = "type", rename_all = "lowercase")]
 pub enum Attribute {
-    String { maxLength: Option<u32>, minLength: Option<u32>},
-    Integer { min: Option<u32>, max: Option<u32>}
+    String(AttributeString),
+    Integer(AttributeInteger),
 }
 impl Attribute {
     fn into_column_type(&self) -> ColumnType {
         match self {
-            Self::String { maxLength, minLength } => {
-                ColumnType::String(StringLen::N(maxLength.unwrap_or(128)))
-            },
-            Self::Integer { min, max } =>{
-                ColumnType::Integer
-            }
+            Self::String(AttributeString {
+                max_length,
+                min_length,
+            }) => ColumnType::String(StringLen::N(max_length.unwrap_or(128))),
+            Self::Integer(AttributeInteger { min, max }) => ColumnType::Integer,
         }
     }
 }
