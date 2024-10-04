@@ -3145,7 +3145,7 @@ version = "0.0.0"
 
 [[package]]
 name = "rapido-core"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "async-std",
  "sea-query",
@@ -3156,7 +3156,7 @@ dependencies = [
 
 [[package]]
 name = "rapido-web"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "async-trait",
  "axum",
