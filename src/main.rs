@@ -1,12 +1,14 @@
 mod app;
 pub mod schema;
-use sea_query::PostgresQueryBuilder;
-use std::{fs::File, io::BufReader};
+use sea_query::{PostgresQueryBuilder, SqliteQueryBuilder};
+use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
+use std::{fs::File, io::BufReader, str::FromStr};
 
 pub mod component;
 use component::Component;
 
-fn main() {
+#[async_std::main]
+async fn main() {
     println!("Hello, world!");
     let file = File::open("component.json").expect("a component file");
     let reader = BufReader::new(file);
@@ -19,4 +21,13 @@ fn main() {
     table.build(PostgresQueryBuilder);
 
     println!("TABLE {:?}", table.to_string(PostgresQueryBuilder));
+
+    let sql = table.build(SqliteQueryBuilder);
+
+    let conn = SqliteConnectOptions::from_str("data.db").unwrap().create_if_missing(true);
+    let pool = SqlitePool::connect_with(conn).await.expect("sqlite");
+
+    let result = sqlx::query(&sql).execute(&pool).await;
+
+
 }
