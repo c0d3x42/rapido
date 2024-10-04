@@ -19,7 +19,7 @@ name = "rapido"
 
 
 [dependencies]
-rapido-core = { path="rapido-core"}
+rapido-core = { version = "0.0.0" }
 
 [workspace.dependencies]
 anyhow      = { version = "1.0.89" }
