@@ -1,9 +1,22 @@
+[package]
+name = "rapido"
+version = "0.0.0"
+authors = ["c0d3x42@gmail.com"]
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/c0d3x42/rapido"
+
+
 [workspace]
 
 resolver = "2"
 
-members = [ "rapido-core", "rapido-web"]
+members = [ ".", "rapido-core", "rapido-web"]
 default-members = [ "rapido-core", "rapido-web"]
+
+[lib]
+name = "rapido"
+
 
 [workspace.dependencies]
 anyhow      = { version = "1.0.89" }
@@ -12,3 +25,5 @@ serde_json = { version = "1.0.128", features = ["indexmap"] }
 
 serde = { version = "1.0.210", features = ["derive", "rc"] }
 sqlx = { version = "0.7", features = ["runtime-async-std", "sqlite"] }
+
+rapido_core = { path="rapido_core"}

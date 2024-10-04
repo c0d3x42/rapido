@@ -3140,6 +3140,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "rapido"
+version = "0.0.0"
+
+[[package]]
 name = "rapido-web"
 version = "0.1.0"
 dependencies = [
