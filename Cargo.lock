@@ -3141,14 +3141,14 @@ dependencies = [
 
 [[package]]
 name = "rapido"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
- "rapido-core 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rapido-core 0.0.1",
 ]
 
 [[package]]
 name = "rapido-api"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "async-trait",
  "axum",
@@ -3157,7 +3157,7 @@ dependencies = [
  "insta",
  "loco-rs",
  "migration",
- "rapido-core 0.0.1",
+ "rapido-core 0.0.2",
  "rstest",
  "sea-orm",
  "serde",
@@ -3173,6 +3173,8 @@ dependencies = [
 [[package]]
 name = "rapido-core"
 version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "782fa357f87bf00047f50cbb9b4c12bb2a41aebee1709799791ac403e5dc5985"
 dependencies = [
  "async-std",
  "sea-query",
@@ -3183,9 +3185,7 @@ dependencies = [
 
 [[package]]
 name = "rapido-core"
-version = "0.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "782fa357f87bf00047f50cbb9b4c12bb2a41aebee1709799791ac403e5dc5985"
+version = "0.0.2"
 dependencies = [
  "async-std",
  "sea-query",
