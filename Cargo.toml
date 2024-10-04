@@ -18,6 +18,9 @@ publish = true
 name = "rapido"
 
 
+[dependencies]
+rapido_core = { path="rapido-core"}
+
 [workspace.dependencies]
 anyhow      = { version = "1.0.89" }
 
@@ -25,5 +28,3 @@ serde_json = { version = "1.0.128", features = ["indexmap"] }
 
 serde = { version = "1.0.210", features = ["derive", "rc"] }
 sqlx = { version = "0.7", features = ["runtime-async-std", "sqlite"] }
-
-rapido_core = { path="rapido_core"}
