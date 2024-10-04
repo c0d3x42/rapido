@@ -3142,6 +3142,9 @@ dependencies = [
 [[package]]
 name = "rapido"
 version = "0.0.0"
+dependencies = [
+ "rapido-core",
+]
 
 [[package]]
 name = "rapido-core"
