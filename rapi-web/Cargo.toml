@@ -25,12 +25,15 @@ sea-orm = { version = "1.0.1", features = [
   "sqlx-postgres",
   "runtime-tokio-rustls",
   "macros",
+  "with-json"
 ] }
 
 axum = "0.7.5"
 include_dir = "0.7"
 uuid = { version = "1.6.0", features = ["v4"] }
 tracing-subscriber = { version = "0.3.17", features = ["env-filter", "json"] }
+
+rapi_core = { path="../rapi-core" }
 
 [[bin]]
 name = "rapi-cli"

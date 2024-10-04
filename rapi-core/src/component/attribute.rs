@@ -6,7 +6,7 @@ mod string;
 use integer::AttributeInteger;
 use string::AttributeString;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Serialize, PartialEq, Eq)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum Attribute {
     String(AttributeString),

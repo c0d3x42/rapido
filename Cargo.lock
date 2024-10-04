@@ -3140,17 +3140,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rapi-core"
-version = "0.1.0"
-dependencies = [
- "async-std",
- "sea-query",
- "serde",
- "serde_json",
- "sqlx",
-]
-
-[[package]]
 name = "rapi-web"
 version = "0.1.0"
 dependencies = [
@@ -3161,6 +3150,7 @@ dependencies = [
  "insta",
  "loco-rs",
  "migration",
+ "rapi_core",
  "rstest",
  "sea-orm",
  "serde",
@@ -3171,6 +3161,17 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "validator",
+]
+
+[[package]]
+name = "rapi_core"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "sea-query",
+ "serde",
+ "serde_json",
+ "sqlx",
 ]
 
 [[package]]

@@ -1,12 +1,15 @@
 use std::collections::HashMap;
 
-use sea_query::{ColumnDef, ColumnType, Iden, IntoIden, StringLen, Table, TableCreateStatement};
-use serde::Deserialize;
+use sea_query::{
+    ColumnDef, ColumnType, Iden, IntoIden, StringLen, Table, TableCreateStatement,
+    TableDropStatement,
+};
+use serde::{Deserialize, Serialize};
 
 pub mod attribute;
 use attribute::Attribute;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct CollectionName(String);
 impl Iden for CollectionName {
     fn unquoted(&self, s: &mut dyn std::fmt::Write) {
@@ -14,7 +17,7 @@ impl Iden for CollectionName {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Serialize, PartialEq, Eq)]
 pub struct Component {
     #[serde(rename = "collectionName")]
     pub collection_name: CollectionName,
@@ -26,7 +29,7 @@ pub struct Component {
 }
 
 impl Component {
-    pub(crate) fn into_table_create_statement(&self) -> TableCreateStatement {
+    pub fn into_table_create_statement(&self) -> TableCreateStatement {
         let mut stmt = Table::create();
 
         stmt.table(self.collection_name.clone().into_iden())
@@ -37,9 +40,16 @@ impl Component {
         }
         stmt
     }
+
+    pub fn into_table_drop_statement(&self) -> TableDropStatement {
+        Table::drop()
+            .table(self.collection_name.clone().into_iden())
+            .if_exists()
+            .to_owned()
+    }
 }
 
-#[derive(Debug, Deserialize, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct ColName(String);
 impl Iden for ColName {
     fn unquoted(&self, s: &mut dyn std::fmt::Write) {
@@ -47,7 +57,7 @@ impl Iden for ColName {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Serialize, PartialEq, Eq)]
 pub struct Attributes(HashMap<ColName, Attribute>);
 impl Attributes {
     pub fn into_column_defs(&self) -> Vec<ColumnDef> {
@@ -63,8 +73,8 @@ impl Attributes {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Serialize, PartialEq, Eq)]
 pub struct Options {}
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Serialize, PartialEq, Eq)]
 pub struct Info {}

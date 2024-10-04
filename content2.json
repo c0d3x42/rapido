@@ -1,0 +1,12 @@
+{
+  "content": {
+    "collectionName": "blah",
+    "info": {},
+    "options": {},
+    "attributes": {
+      "lop": { "type": "integer", "min": 3 },
+      "email": { "type": "string", "maxLength": 64 },
+      "summary": { "type": "string", "maxLength": 32}
+    }
+  }
+}
