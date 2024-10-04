@@ -3,6 +3,9 @@ use std::collections::HashMap;
 use sea_query::{ColumnDef, ColumnType, Iden, IntoIden, StringLen};
 use serde::Deserialize;
 
+pub mod attribute;
+use attribute::Attribute;
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct Component {
     #[serde(rename = "collectionName")]
@@ -17,39 +20,6 @@ pub struct Component {
 impl Iden for Component {
     fn unquoted(&self, s: &mut dyn std::fmt::Write) {
         write!(s, "tbl_{}", self.collection_name).unwrap()
-    }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct AttributeInteger {
-    pub min: Option<u32>,
-    pub max: Option<u32>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct AttributeString {
-    #[serde(rename = "maxLength")]
-    max_length: Option<u32>,
-
-    #[serde(rename = "minLength")]
-    min_length: Option<u32>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[serde(tag = "type", rename_all = "lowercase")]
-pub enum Attribute {
-    String(AttributeString),
-    Integer(AttributeInteger),
-}
-impl Attribute {
-    fn into_column_type(&self) -> ColumnType {
-        match self {
-            Self::String(AttributeString {
-                max_length,
-                min_length,
-            }) => ColumnType::String(StringLen::N(max_length.unwrap_or(128))),
-            Self::Integer(AttributeInteger { min, max }) => ColumnType::Integer,
-        }
     }
 }
 

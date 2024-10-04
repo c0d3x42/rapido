@@ -1,11 +1,11 @@
 mod app;
-pub mod component;
 pub mod schema;
 use std::{fs::File, io::BufReader};
 use sea_query::{IntoIden, PostgresQueryBuilder, Table};
 
-
+pub mod component;
 use component::Component;
+
 fn main() {
     println!("Hello, world!");
     let file = File::open("component.json").expect("a component file");
