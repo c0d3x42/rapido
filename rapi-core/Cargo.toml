@@ -1,0 +1,11 @@
+[package]
+name = "rapi-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-std = { version = "1.13.0", features = ["attributes"] }
+sea-query = "0.31.0"
+serde = {workspace = true}
+serde_json = {workspace = true}
+sqlx = { workspace = true }
