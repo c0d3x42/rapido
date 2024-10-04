@@ -29,10 +29,8 @@ fn main() {
     let mut table = Table::create();
     table.table(comp.clone().into_iden()).if_not_exists();
 
-    for col in comp.cols{
-        //table.col(ColumnDef::new(Document::Id).integer());
-        let col_type = col.r#type.into_column_type();
-        table.col(ColumnDef::new_with_type(col.into_iden(),col_type));
+    for col in comp.attributes.into_column_defs(){
+        table.col(col);
     }
     
     table.build(PostgresQueryBuilder);

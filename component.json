@@ -1,7 +1,9 @@
 {
-    "name": "blah",
-    "cols": [
-        { "name": "id2", "type": { "varchar": 3} },
-        { "name": "id3", "type": { "chars": 3} }
-    ]
+    "collectionName": "blah",
+    "info": {},
+    "options": {},
+    "attributes": {
+        "lop": { "type": "Integer"},
+        "email": { "type": "String"}
+    }
 }
