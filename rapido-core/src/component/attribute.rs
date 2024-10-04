@@ -6,6 +6,9 @@ mod string;
 use integer::AttributeInteger;
 use string::AttributeString;
 
+///
+/// Column types
+/// 
 #[derive(Debug, Deserialize, Clone, Serialize, PartialEq, Eq)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum Attribute {

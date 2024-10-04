@@ -3143,35 +3143,11 @@ dependencies = [
 name = "rapido"
 version = "0.0.1"
 dependencies = [
- "rapido-core 0.0.0",
+ "rapido-core 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
-name = "rapido-core"
-version = "0.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4fe52afe766d38ee7774786e9f3401be8d123d1598b07e8322f01856b7da242"
-dependencies = [
- "async-std",
- "sea-query",
- "serde",
- "serde_json",
- "sqlx",
-]
-
-[[package]]
-name = "rapido-core"
-version = "0.0.1"
-dependencies = [
- "async-std",
- "sea-query",
- "serde",
- "serde_json",
- "sqlx",
-]
-
-[[package]]
-name = "rapido-web"
+name = "rapido-api"
 version = "0.0.1"
 dependencies = [
  "async-trait",
@@ -3192,6 +3168,30 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "validator",
+]
+
+[[package]]
+name = "rapido-core"
+version = "0.0.1"
+dependencies = [
+ "async-std",
+ "sea-query",
+ "serde",
+ "serde_json",
+ "sqlx",
+]
+
+[[package]]
+name = "rapido-core"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "782fa357f87bf00047f50cbb9b4c12bb2a41aebee1709799791ac403e5dc5985"
+dependencies = [
+ "async-std",
+ "sea-query",
+ "serde",
+ "serde_json",
+ "sqlx",
 ]
 
 [[package]]

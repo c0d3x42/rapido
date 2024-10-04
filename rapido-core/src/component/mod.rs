@@ -17,18 +17,22 @@ impl Iden for CollectionName {
     }
 }
 
+/// `Component` represents a database table
 #[derive(Debug, Deserialize, Clone, Serialize, PartialEq, Eq)]
 pub struct Component {
+    /// table name
     #[serde(rename = "collectionName")]
     pub collection_name: CollectionName,
 
     pub info: Info,
     pub options: Options,
 
+    /// `attributes` are the columns
     pub attributes: Attributes,
 }
 
 impl Component {
+    /// generate a CREATE TABLE statement
     pub fn into_table_create_statement(&self) -> TableCreateStatement {
         let mut stmt = Table::create();
 
@@ -41,6 +45,7 @@ impl Component {
         stmt
     }
 
+    /// generate a DROP TABLE statement
     pub fn into_table_drop_statement(&self) -> TableDropStatement {
         Table::drop()
             .table(self.collection_name.clone().into_iden())
@@ -57,9 +62,11 @@ impl Iden for ColName {
     }
 }
 
+/// Collection of all column definitions
 #[derive(Debug, Deserialize, Clone, Serialize, PartialEq, Eq)]
 pub struct Attributes(HashMap<ColName, Attribute>);
 impl Attributes {
+    /// converts `Attributes` into sea_orm::ColumnDef's
     pub fn into_column_defs(&self) -> Vec<ColumnDef> {
         self.0
             .iter()

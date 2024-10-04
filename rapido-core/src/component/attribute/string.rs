@@ -1,5 +1,6 @@
 use super::*;
 
+/// string column options
 #[derive(Debug, Deserialize, Clone, Serialize,PartialEq, Eq)]
 pub struct AttributeString {
     #[serde(rename = "maxLength")]

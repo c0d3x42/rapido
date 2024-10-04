@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
-members = [ ".", "rapido-core", "rapido-web"]
-default-members = [ ".", "rapido-core", "rapido-web"]
+members = [ ".", "rapido-core", "rapido-api"]
+default-members = [ ".", "rapido-core", "rapido-api"]
 
 [package]
 name = "rapido"
@@ -19,7 +19,7 @@ name = "rapido"
 
 
 [dependencies]
-rapido-core = { version = "0.0.0" }
+rapido-core = { version = "0" }
 
 [workspace.dependencies]
 anyhow      = { version = "1.0.89" }
