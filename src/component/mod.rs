@@ -1,15 +1,23 @@
 use std::collections::HashMap;
 
-use sea_query::{ColumnDef, ColumnType, Iden, IntoIden, StringLen};
+use sea_query::{ColumnDef, ColumnType, Iden, IntoIden, StringLen, Table, TableCreateStatement};
 use serde::Deserialize;
 
 pub mod attribute;
 use attribute::Attribute;
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct CollectionName(String);
+impl Iden for CollectionName {
+    fn unquoted(&self, s: &mut dyn std::fmt::Write) {
+        write!(s, "tbl_{}", self.0).unwrap()
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct Component {
     #[serde(rename = "collectionName")]
-    pub collection_name: String,
+    pub collection_name: CollectionName,
 
     pub info: Info,
     pub options: Options,
@@ -17,9 +25,17 @@ pub struct Component {
     pub attributes: Attributes,
 }
 
-impl Iden for Component {
-    fn unquoted(&self, s: &mut dyn std::fmt::Write) {
-        write!(s, "tbl_{}", self.collection_name).unwrap()
+impl Component {
+    pub(crate) fn into_table_create_statement(&self) -> TableCreateStatement {
+        let mut stmt = Table::create();
+
+        stmt.table(self.collection_name.clone().into_iden())
+            .if_not_exists();
+
+        for column_attribute in self.attributes.into_column_defs() {
+            stmt.col(column_attribute);
+        }
+        stmt
     }
 }
 

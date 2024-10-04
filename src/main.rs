@@ -15,13 +15,7 @@ fn main() {
 
     println!("COMP {:#?}", comp);
 
-    let mut table = Table::create();
-    table.table(comp.clone().into_iden()).if_not_exists();
-
-    for col in comp.attributes.into_column_defs(){
-        table.col(col);
-    }
-    
+    let table = comp.into_table_create_statement();
     table.build(PostgresQueryBuilder);
     
     println!("TABLE {:?}", table.to_string(PostgresQueryBuilder));
