@@ -17,9 +17,9 @@ impl Attribute {
         match self {
             Self::String(AttributeString {
                 max_length,
-                min_length,
+                min_length: _,
             }) => ColumnType::String(StringLen::N(max_length.unwrap_or(128))),
-            Self::Integer(AttributeInteger { min, max }) => ColumnType::Integer,
+            Self::Integer(AttributeInteger { min: _, max:_ }) => ColumnType::Integer,
         }
     }
 }
