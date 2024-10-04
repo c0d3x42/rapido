@@ -1,13 +1,14 @@
 use std::collections::HashMap;
 
-use sea_query::{ColumnDef, ColumnType, DynIden, Iden, IdenStatic, IntoIden};
+use sea_query::{ColumnDef, ColumnType, DynIden, Iden, IdenStatic, IntoIden, StringLen};
 use serde::Deserialize;
 
 
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Component {
-    pub collectionName: String,
+    #[serde(rename="collectionName")]
+    pub collection_name: String,
 
     pub info: Info,
     pub options: Options,
@@ -17,27 +18,28 @@ pub struct Component {
 
 impl Iden for Component {
     fn unquoted(&self, s: &mut dyn std::fmt::Write) {
-        write!(s, "tbl_{}", self.collectionName).unwrap()
+        write!(s, "tbl_{}", self.collection_name).unwrap()
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
-pub enum Kind {
-    Integer,
-    String,
+
+#[derive(Debug,Deserialize, Clone)]
+#[serde(tag="type", rename_all="lowercase")]
+pub enum Attribute {
+    String { maxLength: Option<u32>, minLength: Option<u32>},
+    Integer { min: Option<u32>, max: Option<u32>}
 }
-impl Kind {
+impl Attribute {
     fn into_column_type(&self) -> ColumnType {
         match self {
-            Self::Integer => ColumnType::Integer,
-            Self::String => ColumnType::String(sea_query::StringLen::N(128))
+            Self::String { maxLength, minLength } => {
+                ColumnType::String(StringLen::N(maxLength.unwrap_or(128)))
+            },
+            Self::Integer { min, max } =>{
+                ColumnType::Integer
+            }
         }
     }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct Attribute {
-    pub r#type: Kind,
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq, Hash)]
@@ -56,7 +58,7 @@ impl Attributes {
             .iter()
             .map(|(col_name, col_attribute)| {
                 let name = col_name.clone().into_iden();
-                let types = col_attribute.r#type.into_column_type();
+                let types = col_attribute.into_column_type();
 
                 ColumnDef::new_with_type(name, types)
             })

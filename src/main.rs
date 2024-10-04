@@ -2,19 +2,8 @@ mod app;
 pub mod component;
 pub mod schema;
 use std::{fs::File, io::BufReader};
-use sea_query::{ColumnDef, Iden, IntoIden, PostgresQueryBuilder, Table};
+use sea_query::{IntoIden, PostgresQueryBuilder, Table};
 
-#[derive(Iden)]
-enum Document {
-    Table,
-    Id,
-    Uuid,
-    JsonField,
-    Timestamp,
-    TimestampWithTimeZone,
-    Decimal,
-    Array,
-}
 
 use component::Component;
 fn main() {
