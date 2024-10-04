@@ -5,7 +5,7 @@ default-members = [ ".", "rapido-core", "rapido-web"]
 
 [package]
 name = "rapido"
-version = "0.0.0"
+version = "0.0.1"
 description = "api prototyping"
 authors = ["c0d3x42@gmail.com"]
 edition = "2021"
