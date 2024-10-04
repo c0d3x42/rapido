@@ -2,8 +2,8 @@
 
 resolver = "2"
 
-members = [ "rapi-core", "rapi-web"]
-default-members = [ "rapi-core", "rapi-web"]
+members = [ "rapido-core", "rapido-web"]
+default-members = [ "rapido-core", "rapido-web"]
 
 [workspace.dependencies]
 anyhow      = { version = "1.0.89" }

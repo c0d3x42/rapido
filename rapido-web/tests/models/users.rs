@@ -1,6 +1,6 @@
 use insta::assert_debug_snapshot;
 use loco_rs::{model::ModelError, testing};
-use rapi_web::{
+use rapido_web::{
     app::App,
     models::users::{self, Model, RegisterParams},
 };

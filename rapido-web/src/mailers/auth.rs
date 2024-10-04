@@ -6,8 +6,8 @@ use serde_json::json;
 
 use crate::models::users;
 
-static welcome: Dir<'_> = include_dir!("rapi-web/src/mailers/auth/welcome");
-static forgot: Dir<'_> = include_dir!("rapi-web/src/mailers/auth/forgot");
+static welcome: Dir<'_> = include_dir!("rapido-web/src/mailers/auth/welcome");
+static forgot: Dir<'_> = include_dir!("rapido-web/src/mailers/auth/forgot");
 // #[derive(Mailer)] // -- disabled for faster build speed. it works. but lets
 // move on for now.
 

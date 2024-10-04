@@ -1,5 +1,5 @@
 use loco_rs::cli;
-use rapi_web::app::App;
+use rapido_web::app::App;
 use migration::Migrator;
 
 #[tokio::main]

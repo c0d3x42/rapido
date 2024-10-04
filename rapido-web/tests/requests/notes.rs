@@ -1,6 +1,6 @@
 use insta::{assert_debug_snapshot, with_settings};
 use loco_rs::testing;
-use rapi_web::{app::App, models::_entities::notes::Entity};
+use rapido_web::{app::App, models::_entities::notes::Entity};
 use sea_orm::entity::prelude::*;
 use serial_test::serial;
 

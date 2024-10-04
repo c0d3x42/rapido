@@ -1,6 +1,6 @@
 use insta::{assert_debug_snapshot, with_settings};
 use loco_rs::testing;
-use rapi_web::app::App;
+use rapido_web::app::App;
 use serial_test::serial;
 
 use super::prepare_data;

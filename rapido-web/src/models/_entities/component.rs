@@ -2,7 +2,7 @@
 
 use sea_orm::{entity::prelude::*, FromJsonQueryResult };
 use serde::{Deserialize, Serialize};
-use rapi_core::component::Component;
+use rapido_core::component::Component;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "component")]

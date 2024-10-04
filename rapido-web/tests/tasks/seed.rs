@@ -1,5 +1,5 @@
 use loco_rs::{boot::run_task, task, testing};
-use rapi_web::app::App;
+use rapido_web::app::App;
 use serial_test::serial;
 
 #[tokio::test]

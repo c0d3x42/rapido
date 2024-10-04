@@ -3140,7 +3140,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rapi-web"
+name = "rapido-web"
 version = "0.1.0"
 dependencies = [
  "async-trait",
@@ -3150,7 +3150,7 @@ dependencies = [
  "insta",
  "loco-rs",
  "migration",
- "rapi_core",
+ "rapido_core",
  "rstest",
  "sea-orm",
  "serde",
@@ -3164,7 +3164,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rapi_core"
+name = "rapido_core"
 version = "0.1.0"
 dependencies = [
  "async-std",

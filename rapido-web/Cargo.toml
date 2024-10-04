@@ -1,6 +1,6 @@
 
 [package]
-name = "rapi-web"
+name = "rapido-web"
 version = "0.1.0"
 edition = "2021"
 publish = false
@@ -33,7 +33,7 @@ include_dir = "0.7"
 uuid = { version = "1.6.0", features = ["v4"] }
 tracing-subscriber = { version = "0.3.17", features = ["env-filter", "json"] }
 
-rapi_core = { path="../rapi-core" }
+rapido_core = { path="../rapido-core" }
 
 [[bin]]
 name = "rapi-cli"
