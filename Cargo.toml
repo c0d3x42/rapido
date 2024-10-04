@@ -1,0 +1,9 @@
+[package]
+name = "rapi"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sea-query = "0.31.0"
+serde = { version = "1.0.210", features = ["derive", "rc"] }
+serde_json = { version = "1.0.128", features = ["indexmap"] }
