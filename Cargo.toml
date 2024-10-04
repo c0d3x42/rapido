@@ -1,18 +1,18 @@
+[workspace]
+resolver = "2"
+members = [ ".", "rapido-core", "rapido-web"]
+default-members = [ ".", "rapido-core", "rapido-web"]
+
 [package]
 name = "rapido"
 version = "0.0.0"
+description = "api prototyping"
 authors = ["c0d3x42@gmail.com"]
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/c0d3x42/rapido"
+publish = true
 
-
-[workspace]
-
-resolver = "2"
-
-members = [ ".", "rapido-core", "rapido-web"]
-default-members = [ "rapido-core", "rapido-web"]
 
 [lib]
 name = "rapido"

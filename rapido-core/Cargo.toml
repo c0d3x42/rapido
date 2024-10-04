@@ -2,6 +2,9 @@
 name = "rapido_core"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "core libs"
+publish = true
 
 [dependencies]
 async-std = { version = "1.13.0", features = ["attributes"] }
