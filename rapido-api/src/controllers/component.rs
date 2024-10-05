@@ -4,7 +4,7 @@
 use axum::debug_handler;
 use loco_rs::prelude::*;
 use migration::SqliteQueryBuilder;
-use rapido_core::component::Component;
+use rapido_core::component::ComponentSchema;
 use sea_orm::sqlx;
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +13,7 @@ use crate::models::_entities::component::{ActiveModel, ComponentWrapper, Entity,
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Params {
     pub title: Option<String>,
-    pub content: rapido_core::component::Component,
+    pub content: rapido_core::component::ComponentSchema,
 }
 
 impl Params {

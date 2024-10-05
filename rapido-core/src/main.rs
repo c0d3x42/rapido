@@ -5,7 +5,7 @@ use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use std::{fs::File, io::BufReader, str::FromStr};
 
 pub mod component;
-use component::Component;
+use component::ComponentSchema;
 
 #[async_std::main]
 async fn main() {
@@ -13,7 +13,7 @@ async fn main() {
     let file = File::open("component.json").expect("a component file");
     let reader = BufReader::new(file);
 
-    let comp: Component = serde_json::from_reader(reader).expect("to parse content");
+    let comp: ComponentSchema = serde_json::from_reader(reader).expect("to parse content");
 
     println!("COMP {:#?}", comp);
 

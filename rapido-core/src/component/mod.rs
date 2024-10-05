@@ -1,16 +1,17 @@
 use std::collections::HashMap;
 
 use sea_query::{
-    ColumnDef, ColumnType, Iden, IntoIden, StringLen, Table, TableCreateStatement,
-    TableDropStatement,
+    ColumnDef, ColumnType, Iden, IntoIden, Query, SelectStatement, StringLen, Table,
+    TableCreateStatement, TableDropStatement,SqliteQueryBuilder
 };
 use serde::{Deserialize, Serialize};
 
 pub mod attribute;
+pub mod field;
 use attribute::Attribute;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
-pub struct CollectionName(String);
+pub struct CollectionName(pub String);
 impl Iden for CollectionName {
     fn unquoted(&self, s: &mut dyn std::fmt::Write) {
         write!(s, "tbl_{}", self.0).unwrap()
@@ -19,7 +20,7 @@ impl Iden for CollectionName {
 
 /// `Component` represents a database table
 #[derive(Debug, Deserialize, Clone, Serialize, PartialEq, Eq)]
-pub struct Component {
+pub struct ComponentSchema {
     /// table name
     #[serde(rename = "collectionName")]
     pub collection_name: CollectionName,
@@ -31,7 +32,7 @@ pub struct Component {
     pub attributes: Attributes,
 }
 
-impl Component {
+impl ComponentSchema {
     /// generate a CREATE TABLE statement
     pub fn into_table_create_statement(&self) -> TableCreateStatement {
         let mut stmt = Table::create();
@@ -51,6 +52,21 @@ impl Component {
             .table(self.collection_name.clone().into_iden())
             .if_exists()
             .to_owned()
+    }
+
+    pub fn get_all_statement(&self) -> SelectStatement {
+        let columns: Vec<_> = self
+            .attributes
+            .0
+            .iter()
+            .map(|(col_name, _)| col_name.clone().into_iden())
+            .collect();
+
+        let sql = Query::select()
+            .columns(columns)
+            .from(self.collection_name.clone().into_iden())
+            .to_owned();
+        sql
     }
 }
 
@@ -85,3 +101,38 @@ pub struct Options {}
 
 #[derive(Debug, Deserialize, Clone, Serialize, PartialEq, Eq)]
 pub struct Info {}
+
+
+
+#[derive(Debug)]
+pub struct Field {
+    pub name: String,
+    pub r#type: field::FieldType
+}
+
+
+
+#[derive(Debug,Default)]
+pub struct Fields{
+    pub list: Vec<Field>
+}
+impl Fields{
+    fn from(attributes: Attributes) -> Self {
+        Self::default()
+    }
+}
+
+pub struct ParsedComponent {
+    pub table_name: String,
+    pub fields: Fields
+}
+
+impl From<ComponentSchema> for ParsedComponent {
+    fn from(value: ComponentSchema) -> Self {
+        Self { table_name: value.collection_name.0, fields: Fields::from(value.attributes)}
+    }
+}
+
+impl ParsedComponent {
+    
+}

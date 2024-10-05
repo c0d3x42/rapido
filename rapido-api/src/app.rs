@@ -1,6 +1,10 @@
-use std::path::Path;
+use std::{
+    path::Path,
+    sync::{Arc, RwLock},
+};
 
 use async_trait::async_trait;
+use axum::Extension;
 use loco_rs::{
     app::{AppContext, Hooks},
     boot::{create_app, BootResult, StartMode},
@@ -12,14 +16,31 @@ use loco_rs::{
     Result,
 };
 use migration::Migrator;
-use sea_orm::DatabaseConnection;
+use rapido_core::component::CollectionName;
+use sea_orm::{DatabaseConnection, EntityTrait};
 
 use crate::{
     controllers,
-    models::_entities::{notes, users},
+    models::{
+        self,
+        _entities::{notes, users},
+    },
     tasks,
     workers::downloader::DownloadWorker,
 };
+
+pub struct Dynamic {
+    pub counter: usize,
+    pub components: Vec<rapido_core::component::ComponentSchema>,
+}
+impl Dynamic {
+    pub(crate) fn get_component(&self, name: &str)-> Option<&rapido_core::component::ComponentSchema> {
+
+        let comp = self.components.iter().find(|component| component.collection_name.0 == name  );
+
+        comp
+    }
+}
 
 pub struct App;
 #[async_trait]
@@ -49,6 +70,27 @@ impl Hooks for App {
             .add_route(controllers::component::routes())
             .add_route(controllers::auth::routes())
             .add_route(controllers::user::routes())
+            .add_route(controllers::dynamo::routes())
+    }
+
+    async fn after_routes(router: axum::Router, ctx: &AppContext) -> Result<axum::Router> {
+        let items = models::_entities::component::Entity::find()
+            .all(&ctx.db)
+            .await?;
+
+        let dynamic = Dynamic {
+            counter: 0,
+            components: items
+                .into_iter()
+                .map(|item| {
+                    let component = item.content.0;
+                    component
+                })
+                .collect(),
+        };
+        let thing = Arc::new(dynamic);
+
+        Ok(router.layer(Extension(thing)))
     }
 
     fn connect_workers<'a>(p: &'a mut Processor, ctx: &'a AppContext) {
