@@ -1348,6 +1348,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-cmd"
+version = "0.1.0"
+dependencies = [
+ "rapido-core 0.0.2",
+ "serde_json",
+ "sqlx",
+ "tokio",
+]
+
+[[package]]
 name = "fastrand"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -1,0 +1,12 @@
+[package]
+name = "example-cmd"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+
+rapido-core = { path="../../rapido-core" }
+serde_json = { workspace = true}
+sqlx = { workspace = true}
+tokio = "1"

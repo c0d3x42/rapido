@@ -7,6 +7,16 @@ pub enum FieldType {
     String,
     Numeric,
 }
+impl FieldType{
+    pub fn to_string(&self) -> String {
+        match self {
+            Self::String => "varchar(64)",
+            Self::Numeric => "integer",
+            Self::Id => "integer",
+            Self::Boolean => "bool"
+        }.to_string()
+    }
+}
 
 pub trait Decodeable<'r, DB: Database>: Decode<'r, DB> + Type<DB> {}
 impl<'r, T, DB: Database> Decodeable<'r, DB> for T where T: Decode<'r, DB> + Type<DB> {}

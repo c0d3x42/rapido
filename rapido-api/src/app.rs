@@ -16,8 +16,9 @@ use loco_rs::{
     Result,
 };
 use migration::Migrator;
-use rapido_core::component::CollectionName;
+use rapido_core::{component::CollectionName, database::{SqliteDatabase, SqliteLocalConfig}};
 use sea_orm::{DatabaseConnection, EntityTrait};
+use tokio::sync::Mutex;
 
 use crate::{
     controllers,
@@ -32,6 +33,8 @@ use crate::{
 pub struct Dynamic {
     pub counter: usize,
     pub components: Vec<rapido_core::component::ComponentSchema>,
+
+    pub db: Mutex< SqliteDatabase>,
 }
 impl Dynamic {
     pub(crate) fn get_component(&self, name: &str)-> Option<&rapido_core::component::ComponentSchema> {
@@ -79,6 +82,7 @@ impl Hooks for App {
             .await?;
 
         let dynamic = Dynamic {
+            db: Mutex::new(SqliteDatabase::build(SqliteLocalConfig::default()).await.unwrap()),
             counter: 0,
             components: items
                 .into_iter()

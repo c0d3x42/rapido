@@ -1,14 +1,19 @@
 use std::collections::HashMap;
 
 use sea_query::{
-    ColumnDef, ColumnType, Iden, IntoIden, Query, SelectStatement, StringLen, Table,
-    TableCreateStatement, TableDropStatement,SqliteQueryBuilder
+    ColumnDef, ColumnType, Iden, IntoIden, Query, SelectStatement, SqliteQueryBuilder, StringLen,
+    Table, TableCreateStatement, TableDropStatement,
 };
 use serde::{Deserialize, Serialize};
 
 pub mod attribute;
 pub mod field;
 use attribute::Attribute;
+use sqlx::any::AnyArguments;
+
+use super::traits::Entity;
+
+
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct CollectionName(pub String);
@@ -71,7 +76,7 @@ impl ComponentSchema {
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq, Hash, Serialize)]
-pub struct ColName(String);
+pub struct ColName(pub String);
 impl Iden for ColName {
     fn unquoted(&self, s: &mut dyn std::fmt::Write) {
         write!(s, "{}", self.0).unwrap()
@@ -102,37 +107,75 @@ pub struct Options {}
 #[derive(Debug, Deserialize, Clone, Serialize, PartialEq, Eq)]
 pub struct Info {}
 
-
-
 #[derive(Debug)]
 pub struct Field {
     pub name: String,
-    pub r#type: field::FieldType
+    pub r#type: field::FieldType,
 }
-
-
-
-#[derive(Debug,Default)]
-pub struct Fields{
-    pub list: Vec<Field>
-}
-impl Fields{
-    fn from(attributes: Attributes) -> Self {
-        Self::default()
+impl Field {
+    pub fn to_column_definition(&self) -> (String,String) {
+        (self.name.clone(), self.r#type.to_string())
     }
 }
 
+#[derive(Debug, Default)]
+pub struct Fields {
+    pub list: Vec<Field>,
+    pub names: Vec<String>,
+}
+impl Fields {
+    fn from(attributes: Attributes) -> Self {
+        let names = attributes
+            .0
+            .iter()
+            .map(|(col_name, _attribute)| col_name.0.clone())
+            .collect();
+        let list = attributes
+            .0
+            .iter()
+            .map(|(col_name, attribute)| Field {
+                name: col_name.0.clone(),
+                r#type: attribute.into_field_type(),
+            })
+            .collect();
+
+        Self { list, names }
+    }
+}
+
+#[derive(Debug)]
 pub struct ParsedComponent {
     pub table_name: String,
-    pub fields: Fields
+    pub fields: Fields,
 }
 
 impl From<ComponentSchema> for ParsedComponent {
     fn from(value: ComponentSchema) -> Self {
-        Self { table_name: value.collection_name.0, fields: Fields::from(value.attributes)}
+        Self {
+            table_name: value.collection_name.0,
+            fields: Fields::from(value.attributes),
+        }
     }
 }
 
-impl ParsedComponent {
-    
+impl ParsedComponent {}
+
+impl Entity for ParsedComponent {
+    fn get_table_name(&self) -> &str {
+        &self.table_name
+    }
+    fn get_insert_fields(&self) -> Vec<String> {
+        self.fields.names.clone()
+    }
+
+    fn any_arguments_of_insert(&self) -> sqlx::any::AnyArguments<'_> {
+        AnyArguments::default()
+    }
+
+    fn get_create_columns(&self) -> Vec<(String,String)> {
+        
+        self.fields.list.iter().map(|field| field.to_column_definition()).collect()
+        
+
+    }
 }

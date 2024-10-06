@@ -3,6 +3,7 @@ use super::*;
 mod integer;
 mod string;
 
+use field::FieldType;
 use integer::AttributeInteger;
 use string::AttributeString;
 
@@ -23,6 +24,13 @@ impl Attribute {
                 min_length: _,
             }) => ColumnType::String(StringLen::N(max_length.unwrap_or(128))),
             Self::Integer(AttributeInteger { min: _, max:_ }) => ColumnType::Integer,
+        }
+    }
+
+    pub fn into_field_type(&self) -> FieldType {
+        match self {
+            Attribute::String(v) => FieldType::String,
+            Attribute::Integer(v) => FieldType::Numeric
         }
     }
 }

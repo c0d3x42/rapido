@@ -1,14 +1,16 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::unnecessary_struct_initialization)]
 #![allow(clippy::unused_async)]
-use axum::debug_handler;
+use std::sync::Arc;
+
+use axum::{debug_handler, Extension};
 use loco_rs::prelude::*;
 use migration::SqliteQueryBuilder;
-use rapido_core::component::ComponentSchema;
+use rapido_core::{command_executor::CommandExecutor, component::{ComponentSchema, ParsedComponent}, sql_executor::SqlExecutor, sql_generator::SqlGenerator};
 use sea_orm::sqlx;
 use serde::{Deserialize, Serialize};
 
-use crate::models::_entities::component::{ActiveModel, ComponentWrapper, Entity, Model};
+use crate::{app::Dynamic, models::_entities::component::{ActiveModel, ComponentWrapper, Entity, Model}};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Params {
@@ -34,7 +36,12 @@ pub async fn list(State(ctx): State<AppContext>) -> Result<Response> {
 }
 
 #[debug_handler]
-pub async fn add(State(ctx): State<AppContext>, Json(params): Json<Params>) -> Result<Response> {
+pub async fn add(
+    State(ctx): State<AppContext>,
+    Extension(dynamo): Extension<Arc<Dynamic>>,
+
+    Json(params): Json<Params>,
+) -> Result<Response> {
     let mut item = ActiveModel {
         ..Default::default()
     };
@@ -42,19 +49,13 @@ pub async fn add(State(ctx): State<AppContext>, Json(params): Json<Params>) -> R
     let item = item.insert(&ctx.db).await?;
 
     let component = item.content.0.clone();
+    let parsed :ParsedComponent = component.into();
+    let mut db = dynamo.db.lock().await;
 
-    let sql_drop = component
-        .into_table_drop_statement()
-        .build(SqliteQueryBuilder);
-    let sql = component
-        .into_table_create_statement()
-        .build(SqliteQueryBuilder);
-    let query = sqlx::query::<sqlx::Sqlite>(&sql);
+    let sql = db.get_generator().get_create_table_sql(&parsed);
+    let res = db.execute_plain(&sql).await.unwrap();
 
-    let pool = ctx.db.get_sqlite_connection_pool();
-    query.execute(pool).await.expect("to execute sql");
-
-    format::json(item)
+    format::json(format!("{:?}", res))
 }
 
 #[debug_handler]

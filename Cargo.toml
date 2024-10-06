@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
-members = [ ".", "rapido-core", "rapido-api"]
-default-members = [ ".", "rapido-core", "rapido-api"]
+members = [ ".", "rapido-core", "rapido-api", "examples/*"]
+default-members = [ ".", "rapido-core", "rapido-api", "examples/*"]
 
 [package]
 name = "rapido"
