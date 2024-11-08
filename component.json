@@ -4,6 +4,7 @@
     "options": {},
     "attributes": {
         "lop": { "type": "integer", "min": 3},
-        "email": { "type": "string", "maxLength": 64}
+        "email": { "type": "string", "maxLength": 64},
+        "forename": { "type": "string", "maxLength": 64}
     }
 }

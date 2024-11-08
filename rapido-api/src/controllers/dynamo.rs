@@ -7,10 +7,12 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use axum::{debug_handler, Extension};
+use axum::{debug_handler, Extension, Json};
 use loco_rs::prelude::*;
 use migration::SqliteQueryBuilder;
-use sea_orm::sqlx::{self, decode, sqlite::SqliteRow, Column, Database, Decode, FromRow, Row, Sqlite};
+use sea_orm::sqlx::{
+    self, decode, sqlite::SqliteRow, Column, Database, Decode, FromRow, Row, Sqlite,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -62,6 +64,25 @@ pub async fn list(
     format::json(component)
 }
 
+#[debug_handler]
+pub async fn insert(
+    Path(component): Path<String>,
+    Extension(dynamo): Extension<Arc<Dynamic>>,
+    State(ctx): State<AppContext>,
+    Json(value): Json<serde_json::Value>
+) -> Result<Response> {
+    let comp = dynamo.get_component(&component).clone().expect("to find a component");
+    let stmt = comp.insert_from_json(value).expect("json stmt");
+    tracing::debug!("stmt: {:#?}", stmt);
+    let pool = ctx.db.get_sqlite_connection_pool();
+    let arguments = sqlx::sqlite::SqliteArguments::default();
+
+    let r = sqlx::query_as_with::<_,RowContainer,_>(&stmt.to_string(SqliteQueryBuilder), arguments).fetch_all(pool).await.expect("rows");
+    tracing::debug!("rows: {:#?}", r);
+
+    format::json(component)
+}
+
 #[derive(Debug)]
 pub enum MyColValue {
     String(String),
@@ -77,12 +98,18 @@ impl<'r> Decode<'r, Sqlite> for MyColValue {
         Ok(MyColValue::String("".to_string()))
 
     }
-    */
 
     fn decode(value: <sea_orm::sqlx::Sqlite as sqlx::database::HasValueRef<'r>>::ValueRef) -> std::result::Result<Self, sqlx::error::BoxDynError> {
         let r = <&'r str as sqlx::decode::Decode<'r, sqlx::Sqlite>>::decode(value)?;
         Ok(MyColValue::String(r.to_string()))
-        
+
+    }
+    */
+    fn decode(
+        value: <Sqlite as Database>::ValueRef<'r>,
+    ) -> std::result::Result<Self, sqlx::error::BoxDynError> {
+        let r = <&'r str as sqlx::decode::Decode<'r, sqlx::Sqlite>>::decode(value)?;
+        Ok(MyColValue::String(r.to_string()))
     }
 }
 
@@ -114,6 +141,6 @@ pub async fn get_one(
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/dynamo/:component")
-        .add("/", get(list))
+        .add("/", get(list).post(insert))
         .add("/:id", get(get_one))
 }

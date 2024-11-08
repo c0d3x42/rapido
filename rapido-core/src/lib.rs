@@ -13,6 +13,7 @@ pub mod error;
 pub mod sql_executor;
 pub mod sql_generator;
 pub mod command_executor;
+pub mod seatraits;
 
 pub enum DatabaseType {
     Sqlite,

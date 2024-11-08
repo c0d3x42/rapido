@@ -5,7 +5,7 @@ default-members = [ ".", "rapido-core", "rapido-api", "examples/*"]
 
 [package]
 name = "rapido"
-version = "0.0.2"
+version = "0.0.3"
 description = "api prototyping"
 authors = ["c0d3x42@gmail.com"]
 edition = "2021"
@@ -19,11 +19,12 @@ name = "rapido"
 
 
 [dependencies]
-rapido-core = { version = "0" }
+rapido-core = { path = './rapido-core' }
 
 [workspace.dependencies]
-anyhow      = { version = "1.0.89" }
-serde_json = { version = "1.0.128", features = ["indexmap"] }
-serde = { version = "1.0.210", features = ["derive", "rc"] }
-sqlx = { version = "0.7", features = ["runtime-async-std", "sqlite"] }
+anyhow      = { version = "1.0.91" }
+sea-query = "0.32.0"
+serde_json = { version = "1.0.132", features = ["indexmap"] }
+serde = { version = "1.0.213", features = ["derive", "rc"] }
+sqlx = { version = "0.8.2", features = ["runtime-async-std", "sqlite"] }
 thiserror = { version="1"}

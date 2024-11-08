@@ -1,4 +1,4 @@
-use sqlx::{database::HasValueRef, error::BoxDynError, Any, Database, Decode, Type};
+use sqlx::{error::BoxDynError, Any, Database, Decode, Type};
 
 #[derive(Debug)]
 pub enum FieldType {
@@ -32,9 +32,16 @@ impl<T> Decode<'_, Any> for Field<T>
 where
     for<'r> T: Decodeable<'r, Any>,
 {
+    /*
     fn decode(value: <Any as HasValueRef<'_>>::ValueRef) -> Result<Self, BoxDynError> {
         let val = T::decode(value)?;
         Ok(Self::Value(Some(val)))
+    }
+     */
+    fn decode(value: <Any as Database>::ValueRef<'_>) -> Result<Self, BoxDynError> {
+        let val = T::decode(value)?;
+        Ok(Self::Value(Some(val)))
+        
     }
 }
 
