@@ -3204,6 +3204,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serial_test",
+ "tap",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -3221,6 +3222,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]

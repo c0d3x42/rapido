@@ -5,12 +5,22 @@ use std::sync::Arc;
 
 use axum::{debug_handler, Extension};
 use loco_rs::prelude::*;
-use migration::SqliteQueryBuilder;
-use rapido_core::{command_executor::CommandExecutor, component::{ComponentSchema, ParsedComponent}, sql_executor::SqlExecutor, sql_generator::SqlGenerator};
+use migration::{IntoIden, SqliteQueryBuilder};
+use rapido_core::{
+    command_executor::CommandExecutor,
+    component::{ComponentSchema, ParsedComponent},
+    sql_executor::SqlExecutor,
+    sql_generator::SqlGenerator,
+};
+use sea_orm::sea_query::{OnConflict, PostgresQueryBuilder};
 use sea_orm::sqlx;
 use serde::{Deserialize, Serialize};
+use tap::Tap;
 
-use crate::{app::Dynamic, models::_entities::component::{ActiveModel, ComponentWrapper, Entity, Model}};
+use crate::{
+    app::Dynamic,
+    models::_entities::component::{ActiveModel, Column, ComponentWrapper, Entity, Model},
+};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Params {
@@ -22,6 +32,10 @@ impl Params {
     fn update(&self, item: &mut ActiveModel) {
         item.title = Set(self.title.clone());
         item.content = Set(ComponentWrapper(self.content.clone()));
+        item.name = Set(format!(
+            "component:table:{}",
+            self.content.collection_name.0
+        ));
     }
 }
 
@@ -45,17 +59,42 @@ pub async fn add(
     let mut item = ActiveModel {
         ..Default::default()
     };
+
     params.update(&mut item);
-    let item = item.insert(&ctx.db).await?;
 
-    let component = item.content.0.clone();
-    let parsed :ParsedComponent = component.into();
-    let mut db = dynamo.db.lock().await;
+    let maybe_inserted = Entity::insert(item)
+        .on_conflict(
+            OnConflict::column(Column::Name)
+                .update_column(Column::Content)
+                .to_owned(),
+        )
+        .tap(|i| {
+            tracing::info!("I: {:#?}", i);
+        })
+        .exec(&ctx.db)
+        .await?;
+    tracing::info!("Maybe Inserted: {:#?}", maybe_inserted);
 
-    let sql = db.get_generator().get_create_table_sql(&parsed);
-    let res = db.execute_plain(&sql).await.unwrap();
+    let row_id = maybe_inserted.last_insert_id;
 
-    format::json(format!("{:?}", res))
+    let e = Entity::find_by_id(row_id)
+        .one(&ctx.db)
+        .await?
+        .map(|row| row.content);
+
+    if let Some(component_wrapper) = e {
+        let component = component_wrapper.0;
+
+        let create_table_stmt = component.into_table_create_statement();
+        let statement = create_table_stmt.build(PostgresQueryBuilder);
+        let pg_pool = ctx.db.get_postgres_connection_pool();
+        
+        let res = sqlx::query(&statement).execute(pg_pool).await.unwrap();
+        
+        format::json(format!("{:?}", res))
+    } else {
+        format::json(format!("error"))
+    }
 }
 
 #[debug_handler]

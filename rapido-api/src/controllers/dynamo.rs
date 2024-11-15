@@ -9,9 +9,10 @@ use std::{
 
 use axum::{debug_handler, Extension, Json};
 use loco_rs::prelude::*;
-use migration::SqliteQueryBuilder;
+use migration::{PostgresQueryBuilder, SqliteQueryBuilder};
 use sea_orm::sqlx::{
-    self, decode, sqlite::SqliteRow, Column, Database, Decode, FromRow, Row, Sqlite,
+    self, decode, postgres::PgRow, sqlite::SqliteRow, Column, Database, Decode, FromRow, Row,
+    Sqlite,
 };
 use serde::{Deserialize, Serialize};
 
@@ -69,15 +70,22 @@ pub async fn insert(
     Path(component): Path<String>,
     Extension(dynamo): Extension<Arc<Dynamic>>,
     State(ctx): State<AppContext>,
-    Json(value): Json<serde_json::Value>
+    Json(value): Json<serde_json::Value>,
 ) -> Result<Response> {
-    let comp = dynamo.get_component(&component).clone().expect("to find a component");
+    let comp = dynamo
+        .get_component(&component)
+        .clone()
+        .expect("to find a component");
     let stmt = comp.insert_from_json(value).expect("json stmt");
     tracing::debug!("stmt: {:#?}", stmt);
-    let pool = ctx.db.get_sqlite_connection_pool();
-    let arguments = sqlx::sqlite::SqliteArguments::default();
+    let pool = ctx.db.get_postgres_connection_pool();
+    let arguments = sqlx::postgres::PgArguments::default();
 
-    let r = sqlx::query_as_with::<_,RowContainer,_>(&stmt.to_string(SqliteQueryBuilder), arguments).fetch_all(pool).await.expect("rows");
+    let r =
+        sqlx::query_as_with::<_, RowContainer, _>(&stmt.to_string(PostgresQueryBuilder), arguments)
+            .fetch_all(pool)
+            .await
+            .expect("rows");
     tracing::debug!("rows: {:#?}", r);
 
     format::json(component)
@@ -117,6 +125,19 @@ impl<'r> Decode<'r, Sqlite> for MyColValue {
 pub struct RowContainer(HashMap<String, String>);
 impl sqlx::FromRow<'_, SqliteRow> for RowContainer {
     fn from_row(row: &SqliteRow) -> std::result::Result<Self, sqlx::Error> {
+        let mut map = HashMap::new();
+
+        for index in 0..row.len() {}
+
+        for col in row.columns() {
+            let name = col.name().to_string();
+            map.insert(name.clone(), name);
+        }
+        Ok(Self(map))
+    }
+}
+impl sqlx::FromRow<'_, PgRow> for RowContainer {
+    fn from_row(row: &'_ PgRow) -> std::result::Result<Self, sqlx::Error> {
         let mut map = HashMap::new();
 
         for index in 0..row.len() {}

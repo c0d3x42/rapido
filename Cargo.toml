@@ -28,3 +28,4 @@ serde_json = { version = "1.0.132", features = ["indexmap"] }
 serde = { version = "1.0.213", features = ["derive", "rc"] }
 sqlx = { version = "0.8.2", features = ["runtime-async-std", "sqlite"] }
 thiserror = { version="1"}
+tracing = { version="0"}

@@ -36,9 +36,16 @@ pub struct Dynamic {
 
     pub db: Mutex< SqliteDatabase>,
 }
+
 impl Dynamic {
+
+    fn names(&self) -> Vec<&str> {
+        self.components.iter().map(|component| component.collection_name.0.as_str() ).collect()
+    }
+
     pub(crate) fn get_component(&self, name: &str)-> Option<&rapido_core::component::ComponentSchema> {
 
+        tracing::debug!("Components: {:#?}", self.names());
         let comp = self.components.iter().find(|component| component.collection_name.0 == name  );
 
         comp
@@ -87,6 +94,7 @@ impl Hooks for App {
             components: items
                 .into_iter()
                 .map(|item| {
+                    tracing::info!("Loaded Component: [{}] {}", item.id, item.content.collection_name());
                     let component = item.content.0;
                     component
                 })

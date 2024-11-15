@@ -45,7 +45,7 @@ pub trait SqlGenerator {
         let sql = format!(
             "CREATE TABLE IF NOT EXISTS {}{}{} ({})",
             self.get_wrap_char(),
-            table_name,
+            format!("tbl_{}",table_name),
             self.get_wrap_char(),
             column_definitions.join(",")
         );

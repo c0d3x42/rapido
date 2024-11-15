@@ -109,9 +109,10 @@ mailer:
 # Database Configuration
 database:
   # Database connection URI
-  uri: {{ get_env(name="DATABASE_URL", default="sqlite://myapp_development.sqlite?mode=rwc") }}
+  # uri: {{ get_env(name="DATABASE_URL", default="sqlite://myapp_development.sqlite?mode=rwc") }}
+  uri: {{ get_env(name="DATABASE_URL", default="postgres:///rapido") }}
   # When enabled, the sql query will be logged.
-  enable_logging: false
+  enable_logging: true
   # Set the timeout duration when acquiring a connection.
   connect_timeout: {{ get_env(name="DB_CONNECT_TIMEOUT", default="500") }}
   # Set the idle duration before closing a connection.

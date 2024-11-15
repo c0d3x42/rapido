@@ -13,8 +13,16 @@ pub struct Model {
     pub id: i32,
     pub title: Option<String>,
 
+    pub name: String,
+
     #[sea_orm(column_type = "JsonBinary")]
     pub content: ComponentWrapper
+}
+
+impl Model {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -22,3 +30,8 @@ pub enum Relation {}
 
 #[derive(Debug,Serialize,Deserialize, FromJsonQueryResult,Clone, PartialEq, Eq)]
 pub struct ComponentWrapper(pub(crate) ComponentSchema);
+impl ComponentWrapper {
+    pub fn collection_name(&self) -> &str{
+        &self.0.collection_name.0
+    }
+}

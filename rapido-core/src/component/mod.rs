@@ -164,7 +164,9 @@ impl ComponentSchema {
 
 impl Insertable for ComponentSchema {
     fn insert_value(&self, value: serde_json::Value) -> Vec<(&ColName, String)> {
-        //let colnames: Vec<_> = self.attributes.colname_iter().collect();
+        let colnames: Vec<_> = self.attributes.colname_iter().collect();
+        println!("colnames: {:#?}", colnames);
+
         if let serde_json::Value::Object(mut obj) = value {
             let x = self
                 .attributes
@@ -179,7 +181,7 @@ impl Insertable for ComponentSchema {
                 })
                 .collect::<Vec<(&ColName, String)>>();
             let remaining_keys: Vec<&String> = obj.keys().collect();
-
+            println!("remaining keys: {:#?}", remaining_keys);
             x
         } else {
             vec![]

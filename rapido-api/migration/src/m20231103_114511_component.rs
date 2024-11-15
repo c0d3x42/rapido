@@ -11,6 +11,7 @@ impl MigrationTrait for Migration {
             .create_table(
                 table_auto_tz(Component::Table)
                     .col(pk_auto(Component::Id))
+                    .col(string_uniq(Component::Name))
                     .col(string_null(Component::Title))
                     .col(json_binary(Component::Content))
                     .to_owned(),
@@ -30,5 +31,6 @@ enum Component {
     Table,
     Id,
     Title,
+    Name,
     Content,
 }
