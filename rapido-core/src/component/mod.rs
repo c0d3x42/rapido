@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
 use sea_query::{
-    ColumnDef, ColumnType, Iden, IdenList, InsertStatement, IntoIden, Query, SelectStatement,
-    SimpleExpr, SqliteQueryBuilder, StringLen, Table, TableCreateStatement, TableDropStatement,
-    Value,
+    ColumnDef, ColumnType, Iden, IdenList, InsertStatement, IntoIden, PostgresQueryBuilder, Query, SelectStatement, SimpleExpr, SqliteQueryBuilder, StringLen, Table, TableCreateStatement, TableDropStatement, Value
 };
 use serde::{Deserialize, Serialize};
 
@@ -11,9 +9,9 @@ pub mod attribute;
 pub mod field;
 use attribute::Attribute;
 use serde_json::Value as JsonValue;
-use sqlx::any::AnyArguments;
+use sqlx::{any::AnyArguments, postgres::PgQueryResult};
 
-use crate::{error::RapidoError, seatraits::Insertable};
+use crate::{error::RapidoError, seatraits::{Executable, Insertable}};
 
 use super::traits::Entity;
 
@@ -82,7 +80,7 @@ impl ComponentSchema {
         &self,
         value: serde_json::Value,
     ) -> Result<InsertStatement, sea_query::error::Error> {
-        let col_values = self.insert_value(value);
+        let col_values = self.insert_value(&value);
 
         let mut stmt = sea_query::Query::insert();
         stmt.into_table(self.collection_name.clone().into_iden())
@@ -162,26 +160,37 @@ impl ComponentSchema {
     }
 }
 
+impl Executable for ComponentSchema {
+    async fn create_table(&self, pool: &sqlx::PgPool) -> Result<PgQueryResult, sqlx::error::Error> {
+        
+        let stmt = self.into_table_create_statement().build(PostgresQueryBuilder);
+        let res = sqlx::query(&stmt).execute(pool).await;
+        res
+    }
+
+    async fn insert_row(&self, pool: &sqlx::PgPool) {
+        
+    }
+}
+
 impl Insertable for ComponentSchema {
-    fn insert_value(&self, value: serde_json::Value) -> Vec<(&ColName, String)> {
+    fn insert_value<'v>(&self, value: &'v serde_json::Value) -> Vec<(&ColName, &'v String)> {
         let colnames: Vec<_> = self.attributes.colname_iter().collect();
         println!("colnames: {:#?}", colnames);
 
-        if let serde_json::Value::Object(mut obj) = value {
+        if let serde_json::Value::Object(obj) = value {
             let x = self
                 .attributes
                 .0
                 .iter()
                 .filter_map(|(col_name, col_attribute)| {
-                    if let Some(JsonValue::String(val)) = obj.remove(col_name.to_str()) {
+                    if let Some(JsonValue::String(val)) = obj.get(col_name.to_str()) {
                         Some((col_name, val))
                     } else {
                         None
                     }
                 })
-                .collect::<Vec<(&ColName, String)>>();
-            let remaining_keys: Vec<&String> = obj.keys().collect();
-            println!("remaining keys: {:#?}", remaining_keys);
+                .collect::<Vec<(&ColName, &String)>>();
             x
         } else {
             vec![]

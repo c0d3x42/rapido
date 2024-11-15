@@ -7,10 +7,7 @@ use axum::{debug_handler, Extension};
 use loco_rs::prelude::*;
 use migration::{IntoIden, SqliteQueryBuilder};
 use rapido_core::{
-    command_executor::CommandExecutor,
-    component::{ComponentSchema, ParsedComponent},
-    sql_executor::SqlExecutor,
-    sql_generator::SqlGenerator,
+    command_executor::CommandExecutor, component::{ComponentSchema, ParsedComponent}, seatraits::Executable, sql_executor::SqlExecutor, sql_generator::SqlGenerator
 };
 use sea_orm::sea_query::{OnConflict, PostgresQueryBuilder};
 use sea_orm::sqlx;
@@ -85,11 +82,8 @@ pub async fn add(
     if let Some(component_wrapper) = e {
         let component = component_wrapper.0;
 
-        let create_table_stmt = component.into_table_create_statement();
-        let statement = create_table_stmt.build(PostgresQueryBuilder);
         let pg_pool = ctx.db.get_postgres_connection_pool();
-        
-        let res = sqlx::query(&statement).execute(pg_pool).await.unwrap();
+        let res = component.create_table(&pg_pool).await.unwrap();
         
         format::json(format!("{:?}", res))
     } else {
