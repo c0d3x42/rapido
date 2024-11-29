@@ -8,11 +8,12 @@ use axum::Extension;
 use loco_rs::{
     app::{AppContext, Hooks},
     boot::{create_app, BootResult, StartMode},
+    bgworker::{BackgroundWorker,Queue},
     controller::AppRoutes,
     db::{self, truncate_table},
     environment::Environment,
     task::Tasks,
-    worker::{AppWorker, Processor},
+    
     Result,
 };
 use migration::Migrator;
@@ -75,7 +76,6 @@ impl Hooks for App {
 
     fn routes(_ctx: &AppContext) -> AppRoutes {
         AppRoutes::with_default_routes()
-            .prefix("/api")
             .add_route(controllers::notes::routes())
             .add_route(controllers::component::routes())
             .add_route(controllers::auth::routes())
@@ -105,12 +105,14 @@ impl Hooks for App {
         Ok(router.layer(Extension(thing)))
     }
 
-    fn connect_workers<'a>(p: &'a mut Processor, ctx: &'a AppContext) {
-        p.register(DownloadWorker::build(ctx));
-    }
-
     fn register_tasks(tasks: &mut Tasks) {
         tasks.register(tasks::seed::SeedData);
+        // tasks-inject (do not remove)
+    }
+
+    async fn connect_workers(ctx: &AppContext, queue: &Queue) -> Result<()>{
+        queue.register(DownloadWorker::build(ctx)).await?;
+        Ok(())
     }
 
     async fn truncate(db: &DatabaseConnection) -> Result<()> {

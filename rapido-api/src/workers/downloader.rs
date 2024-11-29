@@ -15,16 +15,13 @@ pub struct DownloadWorkerArgs {
     pub user_guid: String,
 }
 
-impl worker::AppWorker<DownloadWorkerArgs> for DownloadWorker {
+#[async_trait]
+impl BackgroundWorker<DownloadWorkerArgs> for DownloadWorker {
     fn build(ctx: &AppContext) -> Self {
         Self { ctx: ctx.clone() }
     }
-}
 
-#[async_trait]
-impl worker::Worker<DownloadWorkerArgs> for DownloadWorker {
-    async fn perform(&self, args: DownloadWorkerArgs) -> worker::Result<()> {
-        // TODO: Some actual work goes here...
+    async fn perform(&self, args: DownloadWorkerArgs) -> Result<()> {
         println!("================================================");
         println!("Sending payment report to user {}", args.user_guid);
 

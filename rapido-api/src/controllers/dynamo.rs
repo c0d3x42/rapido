@@ -161,7 +161,7 @@ pub async fn get_one(
 
 pub fn routes() -> Routes {
     Routes::new()
-        .prefix("/dynamo/:component")
+        .prefix("api/dynamo/:component")
         .add("/", get(list).post(insert))
         .add("/:id", get(get_one))
 }

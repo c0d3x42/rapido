@@ -27,7 +27,7 @@ async fn can_get_notes() {
 
         with_settings!({
             filters => {
-                 let mut combined_filters = testing::CLEANUP_DATE.to_vec();
+                 let mut combined_filters = testing::get_cleanup_date().clone();
                     combined_filters.extend(vec![(r#"\"id\\":\d+"#, r#""id\":ID"#)]);
                     combined_filters
             }
@@ -55,7 +55,7 @@ async fn can_add_note() {
 
         with_settings!({
             filters => {
-                 let mut combined_filters = testing::CLEANUP_DATE.to_vec();
+                 let mut combined_filters = testing::get_cleanup_date().clone();
                     combined_filters.extend(vec![(r#"\"id\\":\d+"#, r#""id\":ID"#)]);
                     combined_filters
             }
@@ -80,7 +80,7 @@ async fn can_get_note() {
 
         with_settings!({
             filters => {
-                 let mut combined_filters = testing::CLEANUP_DATE.to_vec();
+                 let mut combined_filters = testing::get_cleanup_date().clone();
                     combined_filters.extend(vec![(r#"\"id\\":\d+"#, r#""id\":ID"#)]);
                     combined_filters
             }
@@ -106,7 +106,7 @@ async fn can_delete_note() {
 
         with_settings!({
             filters => {
-                 let mut combined_filters = testing::CLEANUP_DATE.to_vec();
+                 let mut combined_filters = testing::get_cleanup_date().clone();
                     combined_filters.extend(vec![(r#"\"id\\":\d+"#, r#""id\":ID"#)]);
                     combined_filters
             }
