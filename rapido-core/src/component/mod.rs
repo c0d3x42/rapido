@@ -49,6 +49,8 @@ pub struct ComponentSchema {
     #[serde(default)]
     pub upserts: Vec<Upsert>,
 
+    
+
     /// `attributes` are the columns
     pub attributes: Attributes,
 }

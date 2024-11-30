@@ -14,6 +14,8 @@ pub mod sql_executor;
 pub mod sql_generator;
 pub mod command_executor;
 pub mod seatraits;
+pub mod json_api;
+pub mod ddl;
 
 pub enum DatabaseType {
     Sqlite,

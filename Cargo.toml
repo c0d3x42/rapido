@@ -26,6 +26,7 @@ anyhow      = { version = "1.0.93" }
 sea-query = "0.32.0"
 serde_json = { version = "1.0.133", features = ["indexmap"] }
 serde = { version = "1.0.215", features = ["derive", "rc"] }
+serde_with = "3.11.0"
 sqlx = { version = "0.8.2", features = ["runtime-async-std", "sqlite"] }
 thiserror = { version="1"}
 tracing = { version="0.1.41"}
