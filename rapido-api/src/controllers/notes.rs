@@ -3,6 +3,7 @@
 #![allow(clippy::unused_async)]
 use axum::debug_handler;
 use loco_rs::prelude::*;
+use migration::PostgresQueryBuilder;
 use serde::{Deserialize, Serialize};
 
 use crate::models::_entities::notes::{ActiveModel, Entity, Model};
@@ -64,6 +65,16 @@ pub async fn get_one(Path(id): Path<i32>, State(ctx): State<AppContext>) -> Resu
     format::json(load_item(&ctx, id).await?)
 }
 
+#[debug_handler]
+pub async fn disco(State(ctx): State<AppContext>) -> Result<Response>{
+    let pgpool = ctx.db.get_postgres_connection_pool().clone();
+    let r = rapido_core::ddl::CreateTableDiscovery::disco_def(pgpool).await;
+
+    //let creations: Vec<String> = r.iter().map(|t| t.to_string(PostgresQueryBuilder)).collect();
+
+    format::json(r)
+}
+
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("api/notes")
@@ -72,4 +83,5 @@ pub fn routes() -> Routes {
         .add("/:id", get(get_one))
         .add("/:id", delete(remove))
         .add("/:id", post(update))
+        .add("/disco", get(disco))
 }

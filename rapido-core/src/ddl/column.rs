@@ -1,39 +1,36 @@
 use sea_query::ColumnDef;
+use sea_schema::postgres::def::{ColumnInfo, NotNull, StringAttr};
 
 use super::*;
 
 #[serde_with::skip_serializing_none]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize,Clone)]
 pub struct Column {
     pub name: ColumnName,
     #[serde(flatten)]
     pub r#type: ColumnType,
-
-    #[serde(default)]
-    pub constraints: Option<ColumnConstraints>,
-    #[serde(default)]
-    pub comment: Option<String>,
 }
 impl Column {
     pub fn into_column_def(&self) -> ColumnDef {
-        let mut column_type = ColumnDef::new_with_type(
+        let column_type = ColumnDef::new_with_type(
             self.name.clone().into_iden(),
             self.r#type.into_seaorm_column_type(),
         );
-        if let Some(constraints) = &self.constraints{
-            if let Some(nullable) =constraints.nullable{
-                if nullable{
-                    column_type.null();
-                }
-            }
-            if let Some(unique) = constraints.unique {
-                if unique{
-                    column_type.unique_key();
-                }
-            }
-        }
 
         column_type
+    }
+}
+
+impl Into<ColumnInfo> for &Column {
+    fn into(self) -> ColumnInfo {
+        ColumnInfo {
+            name: self.name.0.clone(),
+            col_type: self.r#type.clone().into(),
+            default: None,
+            generated: None,
+            not_null: None,
+            is_identity: false,
+        }
     }
 }
 
@@ -50,7 +47,7 @@ impl Iden for ColumnName {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum ColumnType {
     #[serde(rename_all = "camelCase")]
@@ -88,13 +85,25 @@ impl ColumnType {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+impl Into<sea_schema::postgres::def::Type> for ColumnType {
+    fn into(self) -> sea_schema::postgres::def::Type {
+        match self {
+            ColumnType::VarChar {
+                length,
+                default_value,
+            } => sea_schema::postgres::def::Type::Varchar(StringAttr::default()),
+            _ => sea_schema::postgres::def::Type::Varchar(StringAttr::default()),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum DateFormat {
     YYYYMMDD,
     Custom { format: String },
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum DefaultDate {
     #[serde(rename_all = "camelCase")]
     Yesterday,

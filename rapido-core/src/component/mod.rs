@@ -1,7 +1,13 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, iter::Map};
 
 use sea_query::{
-    ColumnDef, ColumnType, Iden, IdenList, InsertStatement, IntoIden, PostgresQueryBuilder, Query, SelectStatement, SimpleExpr, SqliteQueryBuilder, StringLen, Table, TableCreateStatement, TableDropStatement, Value
+    ColumnDef, ColumnType, Iden, IdenList, InsertStatement, IntoIden, PostgresQueryBuilder, Query,
+    SelectStatement, SimpleExpr, SqliteQueryBuilder, StringLen, Table, TableCreateStatement,
+    TableDropStatement, Value,
+};
+use sea_schema::postgres::{
+    def::{Schema, TableDef, TableInfo},
+    discovery::SchemaDiscovery,
 };
 use serde::{Deserialize, Serialize};
 
@@ -9,11 +15,160 @@ pub mod attribute;
 pub mod field;
 use attribute::Attribute;
 use serde_json::Value as JsonValue;
-use sqlx::{any::AnyArguments, postgres::PgQueryResult};
+use sqlx::{any::AnyArguments, postgres::PgQueryResult, PgPool};
 
-use crate::{error::RapidoError, seatraits::{Executable, Insertable}};
+use crate::{
+    ddl::{column::Column, create_table::TableDefinition},
+    error::RapidoError,
+    seatraits::{Executable, Insertable},
+};
 
 use super::traits::Entity;
+
+#[derive(Debug)]
+pub struct RapidoComponents {
+    schema: Schema,
+}
+
+impl RapidoComponents {
+    pub async fn init_from_database(pool: PgPool, schema: &str) -> Self {
+        let schema_discovery = SchemaDiscovery::new(pool, schema);
+        let schema = schema_discovery
+            .discover()
+            .await
+            .expect("to discover tables in schema");
+        RapidoComponents { schema }
+    }
+
+    pub fn init_from_tables(tables: Vec<TableDef>, schema: &str) -> Self {
+        Self {
+            schema: Schema {
+                schema: schema.to_string(),
+                tables,
+            },
+        }
+    }
+
+    pub async fn add_table(&mut self, table_definition: TableDefinition, pool: PgPool) {
+        let table_def = table_definition.into_table_def();
+        let table_create_stmt = table_def.write();
+        let stmt = table_create_stmt.build(PostgresQueryBuilder);
+        let result = sqlx::query(&stmt)
+            .execute(&pool)
+            .await
+            .expect("to have created a table");
+
+        self.schema.tables.push(table_def);
+    }
+
+    pub fn get_table_def(&self, table_name: &str) -> Option<&TableDef> {
+        self.schema
+            .tables
+            .iter()
+            .find(|p| p.info.name == table_name)
+    }
+
+    pub fn get_all_table_def(&self) -> Vec<&TableDef> {
+        self.schema.tables.iter().map(|f| f).collect()
+    }
+    pub fn get_all_table_names(&self) -> Vec<&str> {
+        self.get_all_table_def()
+            .into_iter()
+            .map(|f| f.info.name.as_str())
+            .collect()
+    }
+}
+
+pub struct RapidoComponent<'a> {
+    table_def: &'a TableDef,
+    not_null_column_names: Vec<&'a str>,
+    mandatory_columns: Vec<&'a str>,
+}
+
+impl<'a> RapidoComponent<'a> {
+    pub fn new(table_def: &'a TableDef) -> Self {
+        let not_null_column_names: Vec<&str> = table_def
+            .columns
+            .iter()
+            .filter(|c| c.not_null.is_some())
+            .map(|c| c.name.as_str())
+            .collect();
+
+        let mandatory_columns = table_def
+            .columns
+            .iter()
+            .filter(|c| c.default.is_none() && c.not_null.is_some() && c.generated.is_none())
+            .map(|c| c.name.as_str())
+            .collect();
+
+        Self {
+            table_def,
+            not_null_column_names,
+            mandatory_columns,
+        }
+    }
+
+    pub fn insert(&self, value_map: &serde_json::Map<String, JsonValue>, pool: &PgPool) {
+        tracing::info!("Inserting json...");
+        let r = self
+            .mandatory_columns
+            .iter()
+            .map(|c| {
+                let maybe_value = value_map.get(*c).ok_or(*c);
+                maybe_value.map(|r| (*c, r))
+            })
+            .collect::<Result<Vec<(_, _)>, &str>>();
+        tracing::info!("columns look like {:#?}", r);
+        println!("columns look like {:#?}", r);
+
+        if let Ok(cols) = r {
+            for (col, value) in cols {
+                tracing::info!("happy: [{col}] <- {value}");
+            }
+        }
+    }
+}
+
+struct TableInfoIden(TableInfo);
+
+impl Iden for TableInfoIden {
+    fn unquoted(&self, s: &mut dyn std::fmt::Write) {
+        write!(s, "{}", self.0.name).unwrap()
+    }
+}
+
+async fn insert_json_to_table(
+    json: serde_json::Map<String, JsonValue>,
+    table_def: &TableDef,
+    pool: PgPool,
+) -> Result<(), RapidoError> {
+    let out: Vec<(_, _)> = table_def
+        .columns
+        .iter()
+        .filter_map(|column_info| {
+            json.get(&column_info.name)
+                .and_then(|value| Some((ColName(column_info.name.clone()), value)))
+        })
+        .collect();
+
+    let mut insert_stmt = sea_query::Query::insert();
+    let table_def_iden = TableInfoIden(table_def.info.clone());
+    let insert_stmt =
+        insert_stmt
+            .into_table(table_def_iden.into_iden())
+            .columns(out.iter().map(|c| c.0.clone()))
+            .values(out.iter().map(|v| {
+                SimpleExpr::Value(sea_query::Value::String(Some(Box::new(v.1.to_string()))))
+            }))
+            .map_err(|_err| RapidoError::NotImplemented)?;
+    let stmt = insert_stmt.to_string(PostgresQueryBuilder);
+    let rows = sqlx::query(&stmt)
+        .execute(&pool)
+        .await
+        .map_err(|err| RapidoError::SqlxError(err))?;
+
+    Ok(())
+}
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct CollectionName(pub String);
@@ -37,22 +192,14 @@ pub struct Upsert {
 }
 
 /// `Component` represents a database table
-#[derive(Debug, Deserialize, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Clone, Serialize)]
 pub struct ComponentSchema {
     /// table name
     #[serde(rename = "collectionName")]
     pub collection_name: CollectionName,
 
-    pub info: Info,
-    pub options: Options,
-
-    #[serde(default)]
-    pub upserts: Vec<Upsert>,
-
-    
-
     /// `attributes` are the columns
-    pub attributes: Attributes,
+    pub column_definitions: Vec<Column>,
 }
 
 mod executor {
@@ -78,6 +225,7 @@ impl ComponentSchema {
         self.collection_name.clone()
     }
 
+    /*
     pub fn insert_from_json(
         &self,
         value: serde_json::Value,
@@ -111,21 +259,9 @@ impl ComponentSchema {
         Ok(stmt.to_owned())
     }
 
-    pub fn into_upsert_stmt(
-        &self,
-        upsert_name: &str,
-        columns: &[&str],
-        values: Vec<SimpleExpr>,
-    ) -> InsertStatement {
-        let upsert = self.upserts.iter().find(|u| u.name == upsert_name).unwrap();
-
-        for column in columns {}
-
-        let mut stmt = sea_query::Query::insert();
-        stmt
-    }
-
+     */
     /// generate a CREATE TABLE statement
+    /*
     pub fn into_table_create_statement(&self) -> TableCreateStatement {
         let mut stmt = Table::create();
 
@@ -137,6 +273,7 @@ impl ComponentSchema {
         }
         stmt
     }
+     */
 
     /// generate a DROP TABLE statement
     pub fn into_table_drop_statement(&self) -> TableDropStatement {
@@ -146,6 +283,7 @@ impl ComponentSchema {
             .to_owned()
     }
 
+    /*
     pub fn get_all_statement(&self) -> SelectStatement {
         let columns: Vec<_> = self
             .attributes
@@ -160,19 +298,20 @@ impl ComponentSchema {
             .to_owned();
         sql
     }
+     */
 }
 
+/*
 impl Executable for ComponentSchema {
     async fn create_table(&self, pool: &sqlx::PgPool) -> Result<PgQueryResult, sqlx::error::Error> {
-        
-        let stmt = self.into_table_create_statement().build(PostgresQueryBuilder);
+        let stmt = self
+            .into_table_create_statement()
+            .build(PostgresQueryBuilder);
         let res = sqlx::query(&stmt).execute(pool).await;
         res
     }
 
-    async fn insert_row(&self, pool: &sqlx::PgPool) {
-        
-    }
+    async fn insert_row(&self, pool: &sqlx::PgPool) {}
 }
 
 impl Insertable for ComponentSchema {
@@ -199,6 +338,7 @@ impl Insertable for ComponentSchema {
         }
     }
 }
+ */
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct ColName(pub String);
@@ -325,17 +465,6 @@ pub struct ParsedComponent {
     pub table_name: String,
     pub fields: Fields,
 }
-
-impl From<ComponentSchema> for ParsedComponent {
-    fn from(value: ComponentSchema) -> Self {
-        Self {
-            table_name: value.collection_name.0,
-            fields: Fields::from(value.attributes),
-        }
-    }
-}
-
-impl ParsedComponent {}
 
 impl Entity for ParsedComponent {
     fn get_table_name(&self) -> &str {

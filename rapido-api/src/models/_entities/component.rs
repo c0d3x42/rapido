@@ -2,9 +2,9 @@
 
 use sea_orm::{entity::prelude::*, FromJsonQueryResult };
 use serde::{Deserialize, Serialize};
-use rapido_core::component::ComponentSchema;
+use rapido_core::{component::ComponentSchema, ddl::create_table::TableDefinition};
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "component")]
 pub struct Model {
     pub created_at: DateTimeWithTimeZone,
@@ -28,10 +28,16 @@ impl Model {
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {}
 
-#[derive(Debug,Serialize,Deserialize, FromJsonQueryResult,Clone, PartialEq, Eq)]
-pub struct ComponentWrapper(pub(crate) ComponentSchema);
+#[derive(Debug,Serialize,Deserialize, FromJsonQueryResult,Clone )]
+pub struct ComponentWrapper(pub(crate) TableDefinition);
 impl ComponentWrapper {
     pub fn collection_name(&self) -> &str{
-        &self.0.collection_name.0
+        &self.0.table_name.0
+    }
+}
+
+impl PartialEq for ComponentWrapper {
+    fn eq(&self, other: &Self) -> bool {
+        false
     }
 }

@@ -10,11 +10,13 @@ use std::{
 use axum::{debug_handler, Extension, Json};
 use loco_rs::prelude::*;
 use migration::{PostgresQueryBuilder, SqliteQueryBuilder};
+use rapido_core::component::{RapidoComponent, RapidoComponents};
 use sea_orm::sqlx::{
     self, decode, postgres::PgRow, sqlite::SqliteRow, Column, Database, Decode, FromRow, Row,
     Sqlite,
 };
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 
 use crate::{
     app::Dynamic,
@@ -34,6 +36,7 @@ impl Params {
     }
 }
 
+/*
 #[debug_handler]
 pub async fn list(
     Path(component): Path<String>,
@@ -64,7 +67,8 @@ pub async fn list(
 
     format::json(component)
 }
-
+ */
+/*
 #[debug_handler]
 pub async fn insert(
     Path(component): Path<String>,
@@ -89,6 +93,31 @@ pub async fn insert(
     tracing::debug!("rows: {:#?}", r);
 
     format::json(component)
+}
+ */
+
+#[debug_handler]
+pub async fn insert_one(
+    Path(component): Path<String>,
+    State(ctx): State<AppContext>,
+    Extension(rapido_components): Extension<Arc<Mutex<RapidoComponents>>>,
+    Json(value): Json<serde_json::Value>,
+) -> Result<Response> {
+    let components = rapido_components.lock().await;
+
+    tracing::info!("looking for component: {component}");
+    if let Some(table_def) = components.get_table_def(&component) {
+        tracing::info!("TABLEDEF {:#?}", table_def);
+        let rapido_component = RapidoComponent::new(table_def);
+
+        if let Some(object_map) = value.as_object() {
+            tracing::info!("JSON is a map");
+            let pool = ctx.db.get_postgres_connection_pool();
+            rapido_component.insert(object_map, pool);
+        }
+    }
+
+    format::json(())
 }
 
 #[derive(Debug)]
@@ -162,6 +191,7 @@ pub async fn get_one(
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("api/dynamo/:component")
-        .add("/", get(list).post(insert))
+        //.add("/", get(list).post(insert))
+        .add("/", post(insert_one))
         .add("/:id", get(get_one))
 }

@@ -7,12 +7,13 @@ use axum::{debug_handler, Extension};
 use loco_rs::prelude::*;
 use migration::{IntoIden, SqliteQueryBuilder};
 use rapido_core::{
-    command_executor::CommandExecutor, component::{ComponentSchema, ParsedComponent}, seatraits::Executable, sql_executor::SqlExecutor, sql_generator::SqlGenerator
+    command_executor::CommandExecutor, component::{ComponentSchema, ParsedComponent, RapidoComponents}, ddl::create_table::TableDefinition, seatraits::Executable, sql_executor::SqlExecutor, sql_generator::SqlGenerator
 };
 use sea_orm::sea_query::{OnConflict, PostgresQueryBuilder};
 use sea_orm::sqlx;
 use serde::{Deserialize, Serialize};
 use tap::Tap;
+use tokio::sync::Mutex;
 
 use crate::{
     app::Dynamic,
@@ -22,7 +23,7 @@ use crate::{
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Params {
     pub title: Option<String>,
-    pub content: rapido_core::component::ComponentSchema,
+    pub content: TableDefinition
 }
 
 impl Params {
@@ -31,7 +32,7 @@ impl Params {
         item.content = Set(ComponentWrapper(self.content.clone()));
         item.name = Set(format!(
             "component:table:{}",
-            self.content.collection_name.0
+            self.content.table_name.0
         ));
     }
 }
@@ -42,17 +43,30 @@ async fn load_item(ctx: &AppContext, id: i32) -> Result<Model> {
 }
 
 #[debug_handler]
-pub async fn list(State(ctx): State<AppContext>) -> Result<Response> {
-    format::json(Entity::find().all(&ctx.db).await?)
+pub async fn list(State(ctx): State<AppContext>,
+    Extension(rapido_components): Extension<Arc<Mutex<RapidoComponents>>>,
+
+) -> Result<Response> {
+
+    let components = rapido_components.lock().await;
+
+    let names :Vec<String> = components.get_all_table_names().iter().map(|n| n.to_string()).collect();
+
+    format::json(names)
 }
 
 #[debug_handler]
 pub async fn add(
     State(ctx): State<AppContext>,
     Extension(dynamo): Extension<Arc<Dynamic>>,
+    Extension(rapido_components): Extension<Arc<Mutex<RapidoComponents>>>,
 
     Json(params): Json<Params>,
 ) -> Result<Response> {
+
+    let mut rapido_components = rapido_components.lock().await;
+    rapido_components.add_table(params.content.clone(), ctx.db.get_postgres_connection_pool().clone()).await;
+
     let mut item = ActiveModel {
         ..Default::default()
     };
@@ -83,9 +97,9 @@ pub async fn add(
         let component = component_wrapper.0;
 
         let pg_pool = ctx.db.get_postgres_connection_pool();
-        let res = component.create_table(&pg_pool).await.unwrap();
+        //let res = component.create_table(&pg_pool).await.unwrap();
         
-        format::json(format!("{:?}", res))
+        format::json(format!("notdone" ))
     } else {
         format::json(format!("error"))
     }
@@ -99,6 +113,7 @@ pub async fn update(
 ) -> Result<Response> {
     let item = load_item(&ctx, id).await?;
 
+    /*
     let sql = item
         .content
         .0
@@ -123,8 +138,9 @@ pub async fn update(
         .build(SqliteQueryBuilder);
     let query = sqlx::query(&sql);
     query.execute(pool).await.expect("to recreate table");
+     */
 
-    format::json(item)
+    format::json("not done")
 }
 
 #[debug_handler]

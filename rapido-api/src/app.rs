@@ -7,17 +7,19 @@ use async_trait::async_trait;
 use axum::Extension;
 use loco_rs::{
     app::{AppContext, Hooks},
+    bgworker::{BackgroundWorker, Queue},
     boot::{create_app, BootResult, StartMode},
-    bgworker::{BackgroundWorker,Queue},
     controller::AppRoutes,
     db::{self, truncate_table},
     environment::Environment,
     task::Tasks,
-    
     Result,
 };
 use migration::Migrator;
-use rapido_core::{component::CollectionName, database::{SqliteDatabase, SqliteLocalConfig}};
+use rapido_core::{
+    component::{CollectionName, RapidoComponents},
+    database::{SqliteDatabase, SqliteLocalConfig},
+};
 use sea_orm::{DatabaseConnection, EntityTrait};
 use tokio::sync::Mutex;
 
@@ -35,19 +37,26 @@ pub struct Dynamic {
     pub counter: usize,
     pub components: Vec<rapido_core::component::ComponentSchema>,
 
-    pub db: Mutex< SqliteDatabase>,
+    pub db: Mutex<SqliteDatabase>,
 }
 
 impl Dynamic {
-
     fn names(&self) -> Vec<&str> {
-        self.components.iter().map(|component| component.collection_name.0.as_str() ).collect()
+        self.components
+            .iter()
+            .map(|component| component.collection_name.0.as_str())
+            .collect()
     }
 
-    pub(crate) fn get_component(&self, name: &str)-> Option<&rapido_core::component::ComponentSchema> {
-
+    pub(crate) fn get_component(
+        &self,
+        name: &str,
+    ) -> Option<&rapido_core::component::ComponentSchema> {
         tracing::debug!("Components: {:#?}", self.names());
-        let comp = self.components.iter().find(|component| component.collection_name.0 == name  );
+        let comp = self
+            .components
+            .iter()
+            .find(|component| component.collection_name.0 == name);
 
         comp
     }
@@ -84,25 +93,44 @@ impl Hooks for App {
     }
 
     async fn after_routes(router: axum::Router, ctx: &AppContext) -> Result<axum::Router> {
+        /*
         let items = models::_entities::component::Entity::find()
             .all(&ctx.db)
             .await?;
+         */
 
         let dynamic = Dynamic {
-            db: Mutex::new(SqliteDatabase::build(SqliteLocalConfig::default()).await.unwrap()),
+            db: Mutex::new(
+                SqliteDatabase::build(SqliteLocalConfig::default())
+                    .await
+                    .unwrap(),
+            ),
             counter: 0,
-            components: items
+            components: Default::default()
+            /*
+                items
                 .into_iter()
                 .map(|item| {
-                    tracing::info!("Loaded Component: [{}] {}", item.id, item.content.collection_name());
+                    tracing::info!(
+                        "Loaded Component: [{}] {}",
+                        item.id,
+                        item.content.collection_name()
+                    );
                     let component = item.content.0;
                     component
                 })
                 .collect(),
+             */
         };
         let thing = Arc::new(dynamic);
 
-        Ok(router.layer(Extension(thing)))
+        let rapido_components = RapidoComponents::init_from_database(
+            ctx.db.get_postgres_connection_pool().clone(),
+            "rapido",
+        )
+        .await;
+        let rapido = Arc::new(Mutex::new(rapido_components));
+        Ok(router.layer(Extension(thing)).layer(Extension(rapido)))
     }
 
     fn register_tasks(tasks: &mut Tasks) {
@@ -110,7 +138,7 @@ impl Hooks for App {
         // tasks-inject (do not remove)
     }
 
-    async fn connect_workers(ctx: &AppContext, queue: &Queue) -> Result<()>{
+    async fn connect_workers(ctx: &AppContext, queue: &Queue) -> Result<()> {
         queue.register(DownloadWorker::build(ctx)).await?;
         Ok(())
     }
