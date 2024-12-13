@@ -129,6 +129,10 @@ impl Hooks for App {
             "rapido",
         )
         .await;
+
+        rapido_components.get_all_table_names().iter().for_each(|table_name| {
+            tracing::info!("RapidoComponent: {table_name}");
+        });
         let rapido = Arc::new(Mutex::new(rapido_components));
         Ok(router.layer(Extension(thing)).layer(Extension(rapido)))
     }
