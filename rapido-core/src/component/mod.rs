@@ -1,8 +1,8 @@
 use std::{collections::HashMap, iter::Map};
 
 use sea_query::{
-    ColumnDef, ColumnType, Iden, IdenList, InsertStatement, IntoIden, PostgresQueryBuilder, Query,
-    SelectStatement, SimpleExpr, SqliteQueryBuilder, StringLen, Table, TableCreateStatement,
+    Alias, ColumnDef, ColumnType, Iden, IdenList, InsertStatement, IntoIden, PostgresQueryBuilder,
+    Query, SelectStatement, SimpleExpr, SqliteQueryBuilder, StringLen, Table, TableCreateStatement,
     TableDropStatement, Value,
 };
 use sea_schema::postgres::{
@@ -101,6 +101,8 @@ impl<'a> RapidoComponent<'a> {
             .map(|c| c.name.as_str())
             .collect();
 
+        
+
         Self {
             table_def,
             not_null_column_names,
@@ -113,19 +115,11 @@ impl<'a> RapidoComponent<'a> {
         Some(&ci.col_type)
     }
 
-    pub fn into_sea_value(
-        value: &serde_json::Value,
-        col_type: &Type,
-    ) -> Result<(), error::RapidoError> {
-        todo!()
-    }
-
-    pub fn build_insertable(
+    fn build_insertable(
         &self,
         value_map: &serde_json::Map<String, JsonValue>,
     ) -> Result<Vec<(&str, Value)>, error::RapidoError> {
-
-        let mut col_value :Vec<(&str, Value )> = Vec::with_capacity(self.mandatory_columns.len());
+        let mut col_value: Vec<(&str, Value)> = Vec::with_capacity(self.mandatory_columns.len());
         for mandatory_column in &self.mandatory_columns {
             let json_value = value_map
                 .get(*mandatory_column)
@@ -138,43 +132,34 @@ impl<'a> RapidoComponent<'a> {
                 .ok_or(error::RapidoError::NotImplemented)?;
 
             col_value.push((mandatory_column, sea_value));
-        };
+        }
 
         Ok(col_value)
     }
 
-    pub fn insert(&self, value_map: &serde_json::Map<String, JsonValue>, pool: &PgPool) {
+    pub async fn insert(
+        &self,
+        value_map: &serde_json::Map<String, JsonValue>,
+        pool: &PgPool,
+    ) -> Result<(), RapidoError> {
         tracing::info!("Inserting json...");
 
-        let r = self
-            .mandatory_columns
-            .iter()
-            .map(|c| {
-                let maybe_value = value_map.get(*c).ok_or(*c);
-                maybe_value.map(|r| (*c, r))
-            })
-            .collect::<Result<Vec<(_, _)>, &str>>();
-        tracing::info!("columns look like {:#?}", r);
-        println!("columns look like {:#?}", r);
+        let ins = self.build_insertable(value_map)?;
+        let mut insert_stmt = sea_query::Query::insert();
+        let table_iden = Alias::new(&self.table_def.info.name);
 
-        let colname_to_value: Vec<Option<(&str, sea_query::Value)>> = value_map
-            .iter()
-            .map(|(colname, colvalue)| {
-                if let Some(col_type) = self.get_column_type(colname) {
-                    let v = into_sea_query_value(col_type, colvalue);
-                    v.map(|value| (colname.as_str(), value))
-                } else {
-                    None
-                }
-            })
-            .collect();
+        let stmt = insert_stmt
+            .into_table(table_iden)
+            .columns(ins.iter().map(|t| Alias::new(t.0)))
+            .values(ins.into_iter().map(|t| SimpleExpr::Value(t.1)))
+            .map_err(|_err| RapidoError::NotImplemented)?
+            .to_string(PostgresQueryBuilder);
 
-        if let Ok(cols) = r {
-            for (col, value) in cols {
-                tracing::info!("happy: [{col}] <- {value}");
-                let w = sea_query::value::Value::from(value.clone());
-            }
-        }
+        let _pg_result = sqlx::query(&stmt)
+            .execute(pool)
+            .await
+            .map_err(|err| RapidoError::SqlxError(err))?;
+        Ok(())
     }
 }
 

@@ -113,7 +113,7 @@ pub async fn insert_one(
         if let Some(object_map) = value.as_object() {
             tracing::info!("JSON is a map");
             let pool = ctx.db.get_postgres_connection_pool();
-            rapido_component.insert(object_map, pool);
+            let _r = rapido_component.insert(object_map, pool).await;
         }
     }
 
