@@ -6,7 +6,7 @@ use sea_query::{
     TableDropStatement, Value,
 };
 use sea_schema::postgres::{
-    def::{Schema, TableDef, TableInfo},
+    def::{Schema, TableDef, TableInfo, Type},
     discovery::SchemaDiscovery,
 };
 use serde::{Deserialize, Serialize};
@@ -19,7 +19,7 @@ use sqlx::{any::AnyArguments, postgres::PgQueryResult, PgPool};
 
 use crate::{
     ddl::{column::Column, create_table::TableDefinition},
-    error::RapidoError,
+    error::{self, RapidoError},
     seatraits::{Executable, Insertable},
 };
 
@@ -108,8 +108,44 @@ impl<'a> RapidoComponent<'a> {
         }
     }
 
+    pub fn get_column_type(&self, col_name: &str) -> Option<&sea_schema::postgres::def::Type> {
+        let ci = self.table_def.columns.iter().find(|c| c.name == col_name)?;
+        Some(&ci.col_type)
+    }
+
+    pub fn into_sea_value(
+        value: &serde_json::Value,
+        col_type: &Type,
+    ) -> Result<(), error::RapidoError> {
+        todo!()
+    }
+
+    pub fn build_insertable(
+        &self,
+        value_map: &serde_json::Map<String, JsonValue>,
+    ) -> Result<Vec<(&str, Value)>, error::RapidoError> {
+
+        let mut col_value :Vec<(&str, Value )> = Vec::with_capacity(self.mandatory_columns.len());
+        for mandatory_column in &self.mandatory_columns {
+            let json_value = value_map
+                .get(*mandatory_column)
+                .ok_or(error::RapidoError::NotImplemented)?;
+            let column_type = self
+                .get_column_type(&mandatory_column)
+                .ok_or(error::RapidoError::NotImplemented)?;
+
+            let sea_value = into_sea_query_value(column_type, json_value)
+                .ok_or(error::RapidoError::NotImplemented)?;
+
+            col_value.push((mandatory_column, sea_value));
+        };
+
+        Ok(col_value)
+    }
+
     pub fn insert(&self, value_map: &serde_json::Map<String, JsonValue>, pool: &PgPool) {
         tracing::info!("Inserting json...");
+
         let r = self
             .mandatory_columns
             .iter()
@@ -121,12 +157,41 @@ impl<'a> RapidoComponent<'a> {
         tracing::info!("columns look like {:#?}", r);
         println!("columns look like {:#?}", r);
 
+        let colname_to_value: Vec<Option<(&str, sea_query::Value)>> = value_map
+            .iter()
+            .map(|(colname, colvalue)| {
+                if let Some(col_type) = self.get_column_type(colname) {
+                    let v = into_sea_query_value(col_type, colvalue);
+                    v.map(|value| (colname.as_str(), value))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
         if let Ok(cols) = r {
             for (col, value) in cols {
                 tracing::info!("happy: [{col}] <- {value}");
+                let w = sea_query::value::Value::from(value.clone());
             }
         }
     }
+}
+
+fn into_sea_query_value(coltype: &Type, value: &serde_json::Value) -> Option<Value> {
+    let maybe_value: Option<Value> = match coltype {
+        Type::Varchar(_) | Type::Text => {
+            let q = value
+                .as_str()
+                .and_then(|s| Some(sea_query::Value::String(Some(Box::new(s.to_owned())))));
+            q
+        }
+        Type::BigInt => value
+            .as_i64()
+            .and_then(|i| Some(sea_query::Value::BigInt(Some(i)))),
+        _ => None,
+    };
+    maybe_value
 }
 
 struct TableInfoIden(TableInfo);
