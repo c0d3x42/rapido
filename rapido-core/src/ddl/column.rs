@@ -4,9 +4,10 @@ use sea_schema::postgres::def::{ColumnInfo, NotNull, StringAttr};
 use super::*;
 
 #[serde_with::skip_serializing_none]
-#[derive(Debug, Serialize, Deserialize,Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Column {
     pub name: ColumnName,
+    pub not_null: bool,
     #[serde(flatten)]
     pub r#type: ColumnType,
 }
@@ -28,7 +29,10 @@ impl Into<ColumnInfo> for &Column {
             col_type: self.r#type.clone().into(),
             default: None,
             generated: None,
-            not_null: None,
+            not_null: match self.not_null {
+                true => Some(NotNull),
+                false => None,
+            },
             is_identity: false,
         }
     }

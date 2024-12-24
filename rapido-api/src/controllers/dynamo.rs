@@ -115,6 +115,8 @@ pub async fn insert_one(
             let pool = ctx.db.get_postgres_connection_pool();
             let _r = rapido_component.insert(object_map, pool).await;
         }
+    } else {
+        tracing::warn!("no registered component: {component}");
     }
 
     format::json(())

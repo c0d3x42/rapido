@@ -18,7 +18,7 @@ impl TableDefinition {
     pub fn into_table_def(&self) -> TableDef {
         TableDef {
             info: TableInfo {
-                name: format!(r#"rapido.{}"#, self.table_name.0),
+                name: format!(r#"rapido_{}"#, self.table_name.0),
                 of_type: None,
             },
             columns: self.columns.iter().map(|column| column.into() ).collect(),

@@ -33,10 +33,15 @@ pub struct RapidoComponents {
 impl RapidoComponents {
     pub async fn init_from_database(pool: PgPool, schema: &str) -> Self {
         let schema_discovery = SchemaDiscovery::new(pool, schema);
-        let schema = schema_discovery
+        let mut schema = schema_discovery
             .discover()
             .await
             .expect("to discover tables in schema");
+
+        let tables: Vec<_> = schema.tables.into_iter().filter(|p| p.info.name.starts_with("rapido_")).collect();
+        schema.tables = tables;
+
+        tracing::debug!("discovered schemes {:#?}", schema);
         RapidoComponents { schema }
     }
 
@@ -65,7 +70,7 @@ impl RapidoComponents {
         self.schema
             .tables
             .iter()
-            .find(|p| p.info.name == table_name)
+            .find(|p| p.info.name == format!("rapido_{table_name}"))
     }
 
     pub fn get_all_table_def(&self) -> Vec<&TableDef> {
@@ -82,6 +87,7 @@ impl RapidoComponents {
 pub struct RapidoComponent<'a> {
     table_def: &'a TableDef,
     not_null_column_names: Vec<&'a str>,
+    expected_columns: Vec<&'a str>,
     mandatory_columns: Vec<&'a str>,
 }
 
@@ -101,37 +107,58 @@ impl<'a> RapidoComponent<'a> {
             .map(|c| c.name.as_str())
             .collect();
 
-        
+        let expected_columns: Vec<&str> = table_def
+            .columns
+            .iter()
+            .filter_map(|c| c.generated.is_none().then(|| c.name.as_str()))
+            .collect();
 
         Self {
             table_def,
             not_null_column_names,
+            expected_columns,
             mandatory_columns,
         }
     }
 
+    pub fn get_column_info(
+        &self,
+        col_name: &str,
+    ) -> Option<&sea_schema::postgres::def::ColumnInfo> {
+        self.table_def.columns.iter().find(|c| c.name == col_name)
+    }
+
     pub fn get_column_type(&self, col_name: &str) -> Option<&sea_schema::postgres::def::Type> {
-        let ci = self.table_def.columns.iter().find(|c| c.name == col_name)?;
-        Some(&ci.col_type)
+        self.get_column_info(col_name).map(|ci| &ci.col_type)
     }
 
     fn build_insertable(
         &self,
         value_map: &serde_json::Map<String, JsonValue>,
     ) -> Result<Vec<(&str, Value)>, error::RapidoError> {
-        let mut col_value: Vec<(&str, Value)> = Vec::with_capacity(self.mandatory_columns.len());
-        for mandatory_column in &self.mandatory_columns {
-            let json_value = value_map
-                .get(*mandatory_column)
-                .ok_or(error::RapidoError::NotImplemented)?;
-            let column_type = self
-                .get_column_type(&mandatory_column)
+        let mut col_value: Vec<(&str, Value)> = Vec::with_capacity(self.table_def.columns.len());
+
+        for column in &self.expected_columns {
+            let column_info = self
+                .get_column_info(&column)
                 .ok_or(error::RapidoError::NotImplemented)?;
 
-            let sea_value = into_sea_query_value(column_type, json_value)
-                .ok_or(error::RapidoError::NotImplemented)?;
+            let maybe_json_value = value_map.get(*column);
+            let val = match column_info.default {
+                Some(_) => maybe_json_value,
+                None => Some(maybe_json_value.ok_or(RapidoError::NotImplemented)?),
+            };
 
-            col_value.push((mandatory_column, sea_value));
+            if let Some(value) = val {
+                let v = if value.is_null() && column_info.not_null.is_none() {
+                    into_sea_query_null_value(&column_info.col_type)
+                } else {
+                    into_sea_query_value(&column_info.col_type, value)
+                }
+                .ok_or(RapidoError::NotImplemented)?;
+
+                col_value.push((column, v));
+            }
         }
 
         Ok(col_value)
@@ -160,6 +187,14 @@ impl<'a> RapidoComponent<'a> {
             .await
             .map_err(|err| RapidoError::SqlxError(err))?;
         Ok(())
+    }
+}
+
+fn into_sea_query_null_value(coltype: &Type) -> Option<Value> {
+    match coltype {
+        Type::Varchar(_) | Type::Time(_) => Some(sea_query::Value::String(None)),
+        Type::BigInt => Some(sea_query::Value::BigInt(None)),
+        _ => None,
     }
 }
 

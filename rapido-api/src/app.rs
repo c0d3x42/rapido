@@ -20,7 +20,7 @@ use rapido_core::{
     component::{CollectionName, RapidoComponents},
     database::{SqliteDatabase, SqliteLocalConfig},
 };
-use sea_orm::{DatabaseConnection, EntityTrait};
+use sea_orm::{sqlx, DatabaseConnection, EntityTrait};
 use tokio::sync::Mutex;
 
 use crate::{
@@ -106,33 +106,35 @@ impl Hooks for App {
                     .unwrap(),
             ),
             counter: 0,
-            components: Default::default()
-            /*
-                items
-                .into_iter()
-                .map(|item| {
-                    tracing::info!(
-                        "Loaded Component: [{}] {}",
-                        item.id,
-                        item.content.collection_name()
-                    );
-                    let component = item.content.0;
-                    component
-                })
-                .collect(),
-             */
+            components: Default::default(), /*
+                                               items
+                                               .into_iter()
+                                               .map(|item| {
+                                                   tracing::info!(
+                                                       "Loaded Component: [{}] {}",
+                                                       item.id,
+                                                       item.content.collection_name()
+                                                   );
+                                                   let component = item.content.0;
+                                                   component
+                                               })
+                                               .collect(),
+                                            */
         };
         let thing = Arc::new(dynamic);
 
         let rapido_components = RapidoComponents::init_from_database(
             ctx.db.get_postgres_connection_pool().clone(),
-            "rapido",
+            "public",
         )
         .await;
 
-        rapido_components.get_all_table_names().iter().for_each(|table_name| {
-            tracing::info!("RapidoComponent: {table_name}");
-        });
+        rapido_components
+            .get_all_table_names()
+            .iter()
+            .for_each(|table_name| {
+                tracing::info!("RapidoComponent: {table_name}");
+            });
         let rapido = Arc::new(Mutex::new(rapido_components));
         Ok(router.layer(Extension(thing)).layer(Extension(rapido)))
     }
