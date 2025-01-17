@@ -172,7 +172,7 @@ pub fn routes() -> Routes {
         .prefix("api/components")
         .add("/", get(list))
         .add("/", post(add))
-        .add("/:id", get(get_one))
-        .add("/:id", delete(remove))
-        .add("/:id", post(update))
+        .add("/{id}", get(get_one))
+        .add("/{id}", delete(remove))
+        .add("/{id}", post(update))
 }
