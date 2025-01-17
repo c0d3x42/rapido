@@ -38,7 +38,11 @@ impl RapidoComponents {
             .await
             .expect("to discover tables in schema");
 
-        let tables: Vec<_> = schema.tables.into_iter().filter(|p| p.info.name.starts_with("rapido_")).collect();
+        let tables: Vec<_> = schema
+            .tables
+            .into_iter()
+            .filter(|p| p.info.name.starts_with("rapido_"))
+            .collect();
         schema.tables = tables;
 
         tracing::debug!("discovered schemes {:#?}", schema);
@@ -54,16 +58,18 @@ impl RapidoComponents {
         }
     }
 
-    pub async fn add_table(&mut self, table_definition: TableDefinition, pool: PgPool) {
+    pub async fn add_table(&mut self, table_definition: TableDefinition, pool: PgPool) ->Result<(), RapidoError> {
         let table_def = table_definition.into_table_def();
         let table_create_stmt = table_def.write();
         let stmt = table_create_stmt.build(PostgresQueryBuilder);
-        let result = sqlx::query(&stmt)
-            .execute(&pool)
-            .await
-            .expect("to have created a table");
+        let result = sqlx::query(&stmt).execute(&pool).await.and_then(|qr| {
+                tracing::debug!("create table row count = {}", qr.rows_affected());
+                self.schema.tables.push(table_def);
+                Ok(())
 
-        self.schema.tables.push(table_def);
+        });
+
+        result.map_err(|err| err.into())
     }
 
     pub fn get_table_def(&self, table_name: &str) -> Option<&TableDef> {

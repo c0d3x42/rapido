@@ -3,7 +3,7 @@ use std::{fs::File, io::BufReader};
 use command_executor::CommandExecutor;
 use component::{ComponentSchema, ParsedComponent};
 use database::{SqliteDatabase, SqliteLocalConfig, DB};
-use ddl::{Action, CreateTableAction};
+use ddl::{column::ColumnConstraints, Action, CreateTableAction};
 use rapido_core::*;
 use sea_query::{
     Expr, QueryBuilder, QueryStatementBuilder, SchemaBuilder, SimpleExpr, SqliteQueryBuilder,
@@ -50,12 +50,12 @@ async fn main() {
 
     let ddl_create = ddl::CreateTableAction {
         common: ddl::common::Common::default(),
-        params: ddl::create_table::CreateTableParams {
+        params: ddl::create_table::TableDefinition {
             table_name: ddl::TableName("tbl2".to_string()),
             columns: vec![
                 ddl::column::Column {
-                    comment: None,
-                    constraints: None,
+                    not_null: true,
+                    default: None,
                     name: ddl::column::ColumnName("id".to_string()),
                     r#type: ddl::column::ColumnType::Number {
                         length: 64,
@@ -63,16 +63,17 @@ async fn main() {
                     },
                 },
                 ddl::column::Column {
-                    comment: None,
-                    constraints: None,
+                    default: None,
+                    not_null: true,
                     name: "ts".into(),
                     r#type: ddl::column::ColumnType::Date {
                         format: ddl::column::DateFormat::YYYYMMDD,
-                        default_value: Some(ddl::column::DefaultDate::YYYYMMDD("19840101".to_string())),
+                        default_value: Some(ddl::column::DefaultDate::YYYYMMDD(
+                            "19840101".to_string(),
+                        )),
                     },
                 },
             ],
-            comment: None,
         },
     };
     let js2 = serde_json::to_string_pretty(&ddl_create).unwrap();
@@ -82,9 +83,11 @@ async fn main() {
         serde_json::from_str::<ddl::CreateTableAction>(&js2).unwrap()
     );
     let stmt = ddl_create.into_table_create_statement();
-    println!("STMT {:#?}",stmt);
+    println!("STMT {:#?}", stmt);
 
-    let ddl_cmd = ddl::Command { action: Action::Create(ddl_create)};
+    let ddl_cmd = ddl::Command {
+        action: Action::Create(ddl_create),
+    };
     println!("{}", serde_json::to_string_pretty(&ddl_cmd).unwrap());
 
     println!("Hello, world!");

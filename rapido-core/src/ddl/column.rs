@@ -1,5 +1,5 @@
 use sea_query::ColumnDef;
-use sea_schema::postgres::def::{ColumnInfo, NotNull, StringAttr};
+use sea_schema::postgres::def::{ColumnExpression, ColumnInfo, NotNull, StringAttr};
 
 use super::*;
 
@@ -8,6 +8,7 @@ use super::*;
 pub struct Column {
     pub name: ColumnName,
     pub not_null: bool,
+    pub default: Option<String>,
     #[serde(flatten)]
     pub r#type: ColumnType,
 }
@@ -27,7 +28,9 @@ impl Into<ColumnInfo> for &Column {
         ColumnInfo {
             name: self.name.0.clone(),
             col_type: self.r#type.clone().into(),
-            default: None,
+            default: ColumnExpression::from_option_string(
+                self.default.clone().map(|d| format!(r#"'{d}'"#)),
+            ),
             generated: None,
             not_null: match self.not_null {
                 true => Some(NotNull),

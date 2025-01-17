@@ -9,9 +9,11 @@ use loco_rs::{
     app::{AppContext, Hooks},
     bgworker::{BackgroundWorker, Queue},
     boot::{create_app, BootResult, StartMode},
+    config::{self, Config},
     controller::AppRoutes,
     db::{self, truncate_table},
     environment::Environment,
+    prelude::*,
     task::Tasks,
     Result,
 };
@@ -20,7 +22,6 @@ use rapido_core::{
     component::{CollectionName, RapidoComponents},
     database::{SqliteDatabase, SqliteLocalConfig},
 };
-use sea_orm::{sqlx, DatabaseConnection, EntityTrait};
 use tokio::sync::Mutex;
 
 use crate::{
@@ -79,8 +80,12 @@ impl Hooks for App {
         )
     }
 
-    async fn boot(mode: StartMode, environment: &Environment) -> Result<BootResult> {
-        create_app::<Self, Migrator>(mode, environment).await
+    async fn boot(
+        mode: StartMode,
+        environment: &Environment,
+        config: Config,
+    ) -> Result<BootResult> {
+        create_app::<Self, Migrator>(mode, environment, config).await
     }
 
     fn routes(_ctx: &AppContext) -> AppRoutes {
@@ -149,15 +154,15 @@ impl Hooks for App {
         Ok(())
     }
 
-    async fn truncate(db: &DatabaseConnection) -> Result<()> {
-        truncate_table(db, users::Entity).await?;
-        truncate_table(db, notes::Entity).await?;
+    async fn truncate(ctx: &AppContext) -> Result<()> {
+        truncate_table(&ctx.db, users::Entity).await?;
+        truncate_table(&ctx.db, notes::Entity).await?;
         Ok(())
     }
 
-    async fn seed(db: &DatabaseConnection, base: &Path) -> Result<()> {
-        db::seed::<users::ActiveModel>(db, &base.join("users.yaml").display().to_string()).await?;
-        db::seed::<notes::ActiveModel>(db, &base.join("notes.yaml").display().to_string()).await?;
+    async fn seed(ctx: &AppContext, base: &Path) -> Result<()> {
+        db::seed::<users::ActiveModel>(&ctx.db, &base.join("users.yaml").display().to_string()).await?;
+        db::seed::<notes::ActiveModel>(&ctx.db, &base.join("notes.yaml").display().to_string()).await?;
         Ok(())
     }
 }
