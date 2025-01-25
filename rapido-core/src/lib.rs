@@ -16,6 +16,7 @@ pub mod command_executor;
 pub mod seatraits;
 pub mod json_api;
 pub mod ddl;
+pub mod storage;
 
 pub enum DatabaseType {
     Sqlite,

@@ -58,6 +58,9 @@ impl RapidoComponents {
         }
     }
 
+    /**
+     * add a new table to schema
+     */
     pub async fn add_table(&mut self, table_definition: TableDefinition, pool: PgPool) ->Result<(), RapidoError> {
         let table_def = table_definition.into_table_def();
         let table_create_stmt = table_def.write();

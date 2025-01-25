@@ -13,6 +13,7 @@ pub struct AlterTableParams {
 }
 
 
+
 #[derive(Debug,Serialize,Deserialize)]
 pub struct RenameColumn {
     pub name: ColumnName,

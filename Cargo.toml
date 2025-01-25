@@ -26,9 +26,16 @@ anyhow      = { version = "1.0.95" }
 sea-query = { version="0.32.1", features = ["with-json"] }
 sea-schema = { version = "0.16.1", features = ["sqlx", "with-serde"] }
 
-serde_json = { version = "1.0.135", features = ["indexmap"] }
+serde_json = { version = "1.0.137", features = ["indexmap"] }
 serde = { version = "1.0.217", features = ["derive", "rc"] }
 serde_with = "3.12.0"
 sqlx = { version = "0.8.3", features = ["runtime-async-std", "sqlite", "postgres"] }
 thiserror = { version="1"}
 tracing = { version="0.1.41"}
+sea-orm = { version = "1.1.4", features = [
+  "sqlx-postgres",
+  "runtime-tokio-rustls",
+  "macros",
+  "with-json",
+  "debug-print"
+] }

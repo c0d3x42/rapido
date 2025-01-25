@@ -1,3 +1,5 @@
+use std::{fmt::Display};
+
 use alter_table::AlterTableParams;
 use sea_query::{Iden, IntoIden, Table, TableAlterStatement, TableCreateStatement};
 use sea_schema::{postgres::{def::TableDef, discovery::SchemaDiscovery}, sqlite::Sqlite};
@@ -15,6 +17,11 @@ pub struct TableName(pub String);
 impl Iden for TableName {
     fn unquoted(&self, s: &mut dyn std::fmt::Write) {
         write!(s, "{}", self.0).expect("to convert table name to iden")
+    }
+}
+impl Display for TableName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
