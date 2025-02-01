@@ -50,7 +50,7 @@ async fn main() {
 
     let ddl_create = ddl::CreateTableAction {
         common: ddl::common::Common::default(),
-        params: ddl::create_table::TableDefinition {
+        table_definition: ddl::create_table::TableDefinition {
             table_name: ddl::TableName("tbl2".to_string()),
             columns: vec![
                 ddl::column::Column {

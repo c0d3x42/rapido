@@ -18,7 +18,7 @@ use serde_json::Value as JsonValue;
 use sqlx::{any::AnyArguments, postgres::PgQueryResult, PgPool};
 
 use crate::{
-    ddl::{column::Column, create_table::TableDefinition},
+    ddl::{column::Column, TableDefinition},
     error::{self, RapidoError},
     seatraits::{Executable, Insertable},
 };

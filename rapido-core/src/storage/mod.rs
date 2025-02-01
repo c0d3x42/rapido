@@ -10,7 +10,7 @@ use sea_orm::{
     SelectColumns,
 };
 
-use crate::ddl::create_table::TableDefinition;
+use crate::ddl::TableDefinition;
 
 pub mod db {
     use super::*;
@@ -48,8 +48,14 @@ pub mod db {
 #[async_trait]
 pub trait ComponentInteraction {
     async fn save(&self, table_definition: TableDefinition) -> Result<(), error::StorageError>;
+    /**
+     * fetches table definition for the named table
+     */
     async fn load(&self, table_name: &str) -> Result<TableDefinition, error::StorageError>;
 
+    /**
+     * retrieves the names of the tables
+     */
     async fn index(&self) -> Result<Vec<String>, error::StorageError>;
 }
 

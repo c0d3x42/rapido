@@ -2,7 +2,7 @@
 
 use sea_orm::{entity::prelude::*, FromJsonQueryResult };
 use serde::{Deserialize, Serialize};
-use rapido_core::{component::ComponentSchema, ddl::create_table::TableDefinition};
+use rapido_core::{component::ComponentSchema, ddl::TableDefinition};
 
 #[derive(Clone, Debug, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "component")]

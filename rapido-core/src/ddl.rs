@@ -1,13 +1,12 @@
 use std::{fmt::Display};
 
 use alter_table::AlterTableParams;
-use sea_query::{Iden, IntoIden, Table, TableAlterStatement, TableCreateStatement};
-use sea_schema::{postgres::{def::TableDef, discovery::SchemaDiscovery}, sqlite::Sqlite};
+use sea_query::{ColumnDef, Iden, IntoIden, Table, TableAlterStatement, TableCreateStatement};
+use sea_schema::{postgres::{def::{TableDef, TableInfo}, discovery::SchemaDiscovery}, sqlite::Sqlite};
 use serde::{Deserialize, Serialize};
 pub mod alter_table;
 pub mod common;
 pub mod create_table;
-use create_table::TableDefinition;
 pub mod column;
 use column::Column;
 use sqlx::{PgPool, Pool, Postgres, SqlitePool};
@@ -25,18 +24,52 @@ impl Display for TableName {
     }
 }
 
+
+#[serde_with::skip_serializing_none]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TableDefinition {
+    pub table_name: TableName,
+    pub columns: Vec<Column>,
+}
+impl TableDefinition {
+    fn into_column_defs(&self) -> Vec<ColumnDef> {
+        vec![]
+    }
+
+    /**
+     * convert to a sea_schema TableDef
+     */
+    pub fn into_table_def(&self) -> TableDef {
+        TableDef {
+            info: TableInfo {
+                name: format!(r#"rapido_{}"#, self.table_name.0),
+                of_type: None,
+            },
+            columns: self.columns.iter().map(|column| column.into() ).collect(),
+            check_constraints: Default::default(),
+            not_null_constraints: Default::default(),
+            unique_constraints: Default::default(),
+            primary_key_constraints: Default::default(),
+            reference_constraints: Default::default(),
+            exclusion_constraints: Default::default()
+        }
+    }
+}
+
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateTableAction {
     #[serde(flatten)]
     pub common: common::Common,
-    pub params: TableDefinition,
+    pub table_definition: TableDefinition,
 }
 impl CreateTableAction {
     pub fn into_table_create_statement(&self) -> TableCreateStatement {
         let mut stmt = Table::create();
-        stmt.table(self.params.table_name.clone().into_iden())
+        stmt.table(self.table_definition.table_name.clone().into_iden())
             .if_not_exists();
-        for column in &self.params.columns {
+        for column in &self.table_definition.columns {
             stmt.col(column.into_column_def());
         }
 
