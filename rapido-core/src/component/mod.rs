@@ -91,6 +91,15 @@ impl RapidoComponents {
             .map(|f| f.info.name.as_str())
             .collect()
     }
+
+    pub fn get_component(&self, table_name: &str) -> Option<RapidoComponent>{
+
+        let component =self.get_table_def(table_name).map(|table_def| {
+            RapidoComponent::new(table_def)
+        });
+
+        component
+    }
 }
 
 pub struct RapidoComponent<'a> {

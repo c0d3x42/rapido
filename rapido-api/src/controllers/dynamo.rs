@@ -10,7 +10,10 @@ use std::{
 use axum::{debug_handler, Extension, Json};
 use loco_rs::prelude::*;
 use migration::{PostgresQueryBuilder, SqliteQueryBuilder};
-use rapido_core::component::{RapidoComponent, RapidoComponents};
+use rapido_core::{
+    component::{RapidoComponent, RapidoComponents},
+    error::RapidoError,
+};
 use sea_orm::sqlx::{
     self, decode, postgres::PgRow, sqlite::SqliteRow, Column, Database, Decode, FromRow, Row,
     Sqlite,
@@ -106,19 +109,19 @@ pub async fn insert_one(
     let components = rapido_components.lock().await;
 
     tracing::info!("looking for component: {component}");
-    if let Some(table_def) = components.get_table_def(&component) {
-        tracing::info!("TABLEDEF {:#?}", table_def);
-        let rapido_component = RapidoComponent::new(table_def);
 
-        if let Some(object_map) = value.as_object() {
-            tracing::info!("JSON is a map");
-            let pool = ctx.db.get_postgres_connection_pool();
-            let _r = rapido_component.insert(object_map, pool).await;
-        }
-    } else {
-        tracing::warn!("no registered component: {component}");
-    }
+    let object_map = value
+        .as_object()
+        .ok_or(loco_rs::Error::BadRequest("not a map".to_string()))?;
+    let pool = ctx.db.get_postgres_connection_pool();
 
+    let component = components
+        .get_component(&component)
+        .ok_or(loco_rs::Error::BadRequest("no component".to_string()))?;
+    component
+        .insert(object_map, pool)
+        .await
+        .map_err(|_err| loco_rs::Error::InternalServerError)?;
     format::json(())
 }
 
