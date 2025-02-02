@@ -11,8 +11,7 @@ use sea_orm::{
     prelude::async_trait::async_trait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
     SelectColumns,
 };
-
-use crate::ddl::TableDefinition;
+use sea_schema::postgres::def::TableDef;
 
 pub mod db {
     use super::*;
@@ -20,7 +19,7 @@ pub mod db {
     use sea_orm::{entity::prelude::*, FromJsonQueryResult};
     use serde::{Deserialize, Serialize};
     #[derive(Debug, Clone, FromJsonQueryResult, Serialize, Deserialize)]
-    pub struct ComponentWrapper(pub(crate) TableDefinition);
+    pub struct ComponentWrapper(pub(crate) TableDef);
     impl PartialEq for ComponentWrapper {
         fn eq(&self, other: &Self) -> bool {
             return false;
@@ -49,11 +48,11 @@ pub mod db {
 
 #[async_trait]
 pub trait ComponentInteraction {
-    async fn save(&self, table_definition: TableDefinition) -> Result<(), error::StorageError>;
+    async fn save(&self, table_def: TableDef) -> Result<(), error::StorageError>;
     /**
      * fetches table definition for the named table
      */
-    async fn load(&self, table_name: &str) -> Result<TableDefinition, error::StorageError>;
+    async fn load(&self, table_name: &str) -> Result<TableDef, error::StorageError>;
 
     /**
      * retrieves the names of the tables
@@ -67,15 +66,15 @@ pub struct StorageDatabase<'a> {
 
 #[async_trait]
 impl<'a> ComponentInteraction for StorageDatabase<'a> {
-    async fn save(&self, table_definition: TableDefinition) -> Result<(), error::StorageError> {
+    async fn save(&self, table_def: TableDef) -> Result<(), error::StorageError> {
         let mut model = db::ActiveModel::default();
-        model.content = sea_orm::Set(ComponentWrapper(table_definition));
+        model.content = sea_orm::Set(ComponentWrapper(table_def));
 
         let _ = db::Entity::insert(model).exec(self.db).await;
         Ok(())
     }
 
-    async fn load(&self, table_name: &str) -> Result<TableDefinition, error::StorageError> {
+    async fn load(&self, table_name: &str) -> Result<TableDef, error::StorageError> {
         let row = db::Entity::find()
             .filter(db::Column::TableName.eq(table_name))
             .one(self.db)
@@ -103,10 +102,10 @@ pub struct StorageKv {
 }
 
 impl StorageKv {
-    fn new() -> Result<Self, error::StorageError> {
+    fn new() -> Result<Self, StorageError> {
         let keyspace = fjall::Config::new("./fjall")
             .open()
-            .map_err(|err| error::StorageError::Unhandled)?;
+            .map_err(|err| StorageError::Unhandled)?;
         let items = keyspace
             .open_partition("components", PartitionCreateOptions::default())
             .map_err(|err| StorageError::Unhandled)?;
@@ -116,23 +115,22 @@ impl StorageKv {
 }
 #[async_trait]
 impl ComponentInteraction for StorageKv {
-    async fn save(&self, table_definition: TableDefinition) -> Result<(), StorageError> {
-        let s = serde_json::to_vec(&table_definition).expect("seialize table");
-        let table_name = format!("table_{}", table_definition.table_name);
+    async fn save(&self, table_def: TableDef) -> Result<(), StorageError> {
+        let s = serde_json::to_vec(&table_def).expect("seialize table");
+        let table_name = format!("table_{}", table_def.info.name);
         self
             .items
-            .insert(table_name, &s)
-            .map_err(|err| StorageError::Unhandled)
+            .insert(table_name, &s).map_err(StorageError::from)
     }
-    async fn load(&self, table_name: &str) -> Result<TableDefinition, StorageError> {
+    async fn load(&self, table_name: &str) -> Result<TableDef, StorageError> {
         let x = self
             .items
             .get(table_name)
-            .map_err(|err| StorageError::NotFound)?;
+            .map_err(StorageError::from)?;
 
         if let Some(slice) = x {
-            let table_definition: TableDefinition = serde_json::from_slice(&slice)?;
-            Ok(table_definition)
+            let table_def: TableDef= serde_json::from_slice(&slice)?;
+            Ok(table_def)
         } else {
             Err(StorageError::NotFound)
         }
@@ -162,29 +160,29 @@ pub struct StorageFile<'a> {
 
 #[async_trait]
 impl<'a> ComponentInteraction for StorageFile<'a> {
-    async fn save(&self, table_definition: TableDefinition) -> Result<(), error::StorageError> {
-        let filename = format!("{}/{}.json", self.directory, table_definition.table_name);
+    async fn save(&self, table_def: TableDef) -> Result<(), StorageError> {
+        let filename = format!("{}/{}.json", self.directory, table_def.info.name);
         let path = Path::new(&filename);
         let file = File::create(path).map_err(|_err| error::StorageError::Unhandled)?;
 
-        serde_json::to_writer(file, &table_definition).expect("to write json file");
+        serde_json::to_writer(file, &table_def).expect("to write json file");
         Ok(())
     }
 
-    async fn load(&self, table_name: &str) -> Result<TableDefinition, error::StorageError> {
+    async fn load(&self, table_name: &str) -> Result<TableDef, StorageError> {
         let filename = format!("{}/{}.json", self.directory, table_name);
         let path = Path::new(&filename);
-        let file = File::open(path).map_err(|_err| error::StorageError::Unhandled)?;
+        let file = File::open(path).map_err(|_err| StorageError::Unhandled)?;
 
-        let content: TableDefinition = serde_json::from_reader(file).expect("to read file");
+        let content: TableDef= serde_json::from_reader(file).expect("to read file");
         Ok(content)
     }
 
-    async fn index(&self) -> Result<Vec<String>, error::StorageError> {
+    async fn index(&self) -> Result<Vec<String>, StorageError> {
         let path = Path::new(self.directory);
 
         let files: Vec<String> = fs::read_dir(&path)
-            .map_err(|_err| error::StorageError::Unhandled)?
+            .map_err(|_err| StorageError::Unhandled)?
             .into_iter()
             .filter_map(|f| f.ok())
             .map(|f| format!("{:?}", f.file_name()))
@@ -207,5 +205,8 @@ pub mod error {
 
         #[error("se/de")]
         Serde(#[from] serde_json::Error),
+
+        #[error("fjall")]
+        Fjall(#[from] fjall::Error)
     }
 }

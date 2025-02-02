@@ -77,15 +77,12 @@ pub struct CreateTableAction {
 }
 impl CreateTableAction {
     pub fn into_table_create_statement(&self) -> TableCreateStatement {
-        let mut stmt = Table::create();
-        stmt.table(self.table_definition.table_name.clone().into_iden())
-            .if_not_exists();
-        for column in &self.table_definition.columns {
-            stmt.col(column.into_column_def());
-        }
 
-        //let t = serde_json::to_string_pretty(&stmt);
-        //println!("STATEMENT: {t}");
+        let table_def: TableDef = self.table_definition.clone().into();
+
+        let mut stmt = table_def.write();
+        stmt = stmt.if_not_exists().to_owned();
+
         stmt
     }
 }
