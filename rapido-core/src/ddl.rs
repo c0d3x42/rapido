@@ -23,6 +23,11 @@ impl Display for TableName {
         write!(f, "{}", self.0)
     }
 }
+impl From<&str> for TableName {
+    fn from(value: &str) -> Self {
+        TableName(value.to_string())
+    }
+}
 
 
 #[serde_with::skip_serializing_none]

@@ -5,6 +5,8 @@ use std::{
 };
 
 use db::ComponentWrapper;
+use error::StorageError;
+use fjall::{PartitionCreateOptions, PartitionHandle};
 use sea_orm::{
     prelude::async_trait::async_trait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
     SelectColumns,
@@ -96,6 +98,64 @@ impl<'a> ComponentInteraction for StorageDatabase<'a> {
     }
 }
 
+pub struct StorageKv {
+    items: PartitionHandle,
+}
+
+impl StorageKv {
+    fn new() -> Result<Self, error::StorageError> {
+        let keyspace = fjall::Config::new("./fjall")
+            .open()
+            .map_err(|err| error::StorageError::Unhandled)?;
+        let items = keyspace
+            .open_partition("components", PartitionCreateOptions::default())
+            .map_err(|err| StorageError::Unhandled)?;
+
+        Ok(Self { items })
+    }
+}
+#[async_trait]
+impl ComponentInteraction for StorageKv {
+    async fn save(&self, table_definition: TableDefinition) -> Result<(), StorageError> {
+        let s = serde_json::to_vec(&table_definition).expect("seialize table");
+        let table_name = format!("table_{}", table_definition.table_name);
+        self
+            .items
+            .insert(table_name, &s)
+            .map_err(|err| StorageError::Unhandled)
+    }
+    async fn load(&self, table_name: &str) -> Result<TableDefinition, StorageError> {
+        let x = self
+            .items
+            .get(table_name)
+            .map_err(|err| StorageError::NotFound)?;
+
+        if let Some(slice) = x {
+            let table_definition: TableDefinition = serde_json::from_slice(&slice)?;
+            Ok(table_definition)
+        } else {
+            Err(StorageError::NotFound)
+        }
+    }
+    async fn index(&self) -> Result<Vec<String>, StorageError> {
+        let mut vs = Vec::new();
+        for kv in self
+            .items
+            .prefix::<&str>("table_")
+            .filter_map(|x| x.ok())
+            .map(|(k, v)| k)
+        {
+            if let Some(s) = kv.strip_prefix("table_".as_bytes()) {
+                let x = std::str::from_utf8(s)
+                    .map(String::from)
+                    .expect("string from prefix");
+                vs.push(x);
+            }
+        }
+        Ok(vs)
+    }
+}
+
 pub struct StorageFile<'a> {
     pub directory: &'a str,
 }
@@ -144,5 +204,8 @@ pub mod error {
 
         #[error("other unhandled")]
         Unhandled,
+
+        #[error("se/de")]
+        Serde(#[from] serde_json::Error),
     }
 }

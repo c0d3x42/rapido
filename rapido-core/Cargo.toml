@@ -26,3 +26,4 @@ sea-orm = { version = "1.1.4", features = [
   "with-json",
   "debug-print"
 ] }
+fjall = "2.5.0"
