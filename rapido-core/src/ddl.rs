@@ -30,6 +30,9 @@ impl From<&str> for TableName {
 }
 
 
+/**
+ * TableDefinition is the external format, i cut down of sea_schema::TableDef
+ */
 #[serde_with::skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
