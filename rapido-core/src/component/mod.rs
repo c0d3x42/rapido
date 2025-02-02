@@ -62,7 +62,7 @@ impl RapidoComponents {
      * add a new table to schema
      */
     pub async fn add_table(&mut self, table_definition: TableDefinition, pool: PgPool) ->Result<(), RapidoError> {
-        let table_def = table_definition.into_table_def();
+        let table_def :TableDef= table_definition.into();
         let table_create_stmt = table_def.write();
         let stmt = table_create_stmt.build(PostgresQueryBuilder);
         let result = sqlx::query(&stmt).execute(&pool).await.and_then(|qr| {

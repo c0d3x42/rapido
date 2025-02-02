@@ -46,22 +46,28 @@ impl TableDefinition {
      * convert to a sea_schema TableDef
      */
     pub fn into_table_def(&self) -> TableDef {
+        Self::into(self.clone())
+    }
+}
+
+impl From<TableDefinition> for TableDef {
+    fn from(value: TableDefinition) -> Self {
         TableDef {
             info: TableInfo {
-                name: format!(r#"rapido_{}"#, self.table_name.0),
+                name: format!(r#"rapido_{}"#, value.table_name.0),
                 of_type: None,
             },
-            columns: self.columns.iter().map(|column| column.into() ).collect(),
+            columns: value.columns.iter().map(|column| column.into() ).collect(),
             check_constraints: Default::default(),
             not_null_constraints: Default::default(),
             unique_constraints: Default::default(),
             primary_key_constraints: Default::default(),
             reference_constraints: Default::default(),
             exclusion_constraints: Default::default()
+ 
         }
     }
 }
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateTableAction {
