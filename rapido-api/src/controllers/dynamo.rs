@@ -1,30 +1,18 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::unnecessary_struct_initialization)]
 #![allow(clippy::unused_async)]
-use std::{
-    collections::HashMap,
-    hash::Hash,
-    sync::{Arc, RwLock},
-};
+use std::{collections::HashMap, sync::Arc};
 
 use axum::{debug_handler, Extension, Json};
 use loco_rs::prelude::*;
-use migration::{PostgresQueryBuilder, SqliteQueryBuilder};
-use rapido_core::{
-    component::{RapidoComponent, RapidoComponents},
-    error::RapidoError,
-};
+use rapido_core::component::RapidoComponents;
 use sea_orm::sqlx::{
-    self, decode, postgres::PgRow, sqlite::SqliteRow, Column, Database, Decode, FromRow, Row,
-    Sqlite,
+    self, postgres::PgRow, sqlite::SqliteRow, Column, Database, Decode, Row, Sqlite,
 };
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 
-use crate::{
-    app::Dynamic,
-    models::_entities::notes::{ActiveModel, Entity, Model},
-};
+use crate::models::_entities::notes::ActiveModel;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Params {

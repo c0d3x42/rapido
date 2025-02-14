@@ -63,7 +63,7 @@ pub async fn list(
 #[debug_handler]
 pub async fn add(
     State(ctx): State<AppContext>,
-    Extension(dynamo): Extension<Arc<Dynamic>>,
+    Extension(_dynamo): Extension<Arc<Dynamic>>,
     Extension(rapido_components): Extension<Arc<Mutex<RapidoComponents>>>,
 
     Json(params): Json<Params>,
@@ -72,10 +72,13 @@ pub async fn add(
 
     let table_name = format!("component:table:{}", params.content.table_name);
     tracing::trace!("tbl {}", table_name);
-    let finder = Entity::find().filter(Column::Name.eq(table_name)).one(&ctx.db).await?;
+    let finder = Entity::find()
+        .filter(Column::Name.eq(table_name))
+        .one(&ctx.db)
+        .await?;
     if let Some(model) = finder {
         tracing::warn!("Model already exist: {:?}", model.name);
-        return format::json("already created")
+        return format::json("already created");
     }
 
     let result = rapido_components
@@ -84,7 +87,7 @@ pub async fn add(
             ctx.db.get_postgres_connection_pool().clone(),
         )
         .await;
-    if let Err(res)  = result {
+    if let Err(res) = result {
         return format::json(format!("{res}"));
     }
     tracing::debug!("Add table: {:?}", result);
