@@ -27,65 +27,6 @@ impl Params {
     }
 }
 
-/*
-#[debug_handler]
-pub async fn list(
-    Path(component): Path<String>,
-    Extension(dynamo): Extension<Arc<Dynamic>>,
-    State(ctx): State<AppContext>,
-) -> Result<Response> {
-    tracing::info!("Dynamo Path: {component}");
-
-    let comp = dynamo
-        .get_component(&component)
-        .clone()
-        .expect("to find a component");
-    let (sql, values) = comp.get_all_statement().build(SqliteQueryBuilder);
-    //let query = sqlx::query_as::<(String,String)>(&stmt);
-    tracing::debug!("query: {:#?}", sql);
-
-    let pool = ctx.db.get_sqlite_connection_pool();
-    //let results = query.fetch_all(pool).await.expect("results");
-    //let results = query.execute(pool).await.expect("results");
-    //tracing::debug!("{:#?}", results);
-    let arguments = sqlx::sqlite::SqliteArguments::default();
-
-    let results = sqlx::query_as_with::<_, RowContainer, _>(&sql, arguments)
-        .fetch_all(pool)
-        .await
-        .expect("row results");
-    tracing::debug!("ROWS {:#?}", results);
-
-    format::json(component)
-}
- */
-/*
-#[debug_handler]
-pub async fn insert(
-    Path(component): Path<String>,
-    Extension(dynamo): Extension<Arc<Dynamic>>,
-    State(ctx): State<AppContext>,
-    Json(value): Json<serde_json::Value>,
-) -> Result<Response> {
-    let comp = dynamo
-        .get_component(&component)
-        .clone()
-        .expect("to find a component");
-    let stmt = comp.insert_from_json(value).expect("json stmt");
-    tracing::debug!("stmt: {:#?}", stmt);
-    let pool = ctx.db.get_postgres_connection_pool();
-    let arguments = sqlx::postgres::PgArguments::default();
-
-    let r =
-        sqlx::query_as_with::<_, RowContainer, _>(&stmt.to_string(PostgresQueryBuilder), arguments)
-            .fetch_all(pool)
-            .await
-            .expect("rows");
-    tracing::debug!("rows: {:#?}", r);
-
-    format::json(component)
-}
- */
 
 #[debug_handler]
 pub async fn insert_one(

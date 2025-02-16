@@ -33,24 +33,25 @@ mod db {
     impl ActiveModelBehavior for ActiveModel {}
 }
 
-pub struct StorageDatabase<'a> {
-    pub db: &'a DatabaseConnection,
+#[derive(Debug)]
+pub struct StorageDatabase {
+    pub db: DatabaseConnection,
 }
 
 #[async_trait]
-impl<'a> ComponentInteraction for StorageDatabase<'a> {
-    async fn save(&self, table_def: TableDef) -> Result<(), error::StorageError> {
+impl ComponentInteraction for StorageDatabase {
+    async fn store(&self, table_def: TableDef) -> Result<(), error::StorageError> {
         let mut model = db::ActiveModel::default();
         model.content = sea_orm::Set(db::ComponentWrapper(table_def));
 
-        let _ = db::Entity::insert(model).exec(self.db).await;
+        let _ = db::Entity::insert(model).exec(&self.db).await;
         Ok(())
     }
 
-    async fn load(&self, table_name: &str) -> Result<TableDef, error::StorageError> {
+    async fn fetch(&self, table_name: &str) -> Result<TableDef, error::StorageError> {
         let row = db::Entity::find()
             .filter(db::Column::TableName.eq(table_name))
-            .one(self.db)
+            .one(&self.db)
             .await
             .map_err(|_err| error::StorageError::Unhandled)?
             .ok_or(error::StorageError::NotFound)?;
@@ -60,7 +61,7 @@ impl<'a> ComponentInteraction for StorageDatabase<'a> {
     async fn index(&self) -> Result<Vec<String>, error::StorageError> {
         let r = db::Entity::find()
             .select_column(db::Column::TableName)
-            .all(self.db)
+            .all(&self.db)
             .await
             .map_err(|_err| error::StorageError::Unhandled)?
             .into_iter()

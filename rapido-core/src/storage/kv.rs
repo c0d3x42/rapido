@@ -1,11 +1,19 @@
+use std::fmt::Debug;
+
 use super::*;
 
 pub struct StorageKv {
     items: PartitionHandle,
 }
+impl Debug for StorageKv{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let p = self.items.path().display();
+        f.write_str("kv")
+    }
+}
 
 impl StorageKv {
-    fn new() -> Result<Self, StorageError> {
+    pub fn new() -> Result<Self, StorageError> {
         let keyspace = fjall::Config::new("./fjall")
             .open()
             .map_err(|err| StorageError::Unhandled)?;
@@ -19,14 +27,14 @@ impl StorageKv {
 
 #[async_trait]
 impl ComponentInteraction for StorageKv {
-    async fn save(&self, table_def: TableDef) -> Result<(), StorageError> {
+    async fn store(&self, table_def: TableDef) -> Result<(), StorageError> {
         let s = serde_json::to_vec(&table_def).expect("seialize table");
         let table_name = format!("table_{}", table_def.info.name);
         self.items
             .insert(table_name, &s)
             .map_err(StorageError::from)
     }
-    async fn load(&self, table_name: &str) -> Result<TableDef, StorageError> {
+    async fn fetch(&self, table_name: &str) -> Result<TableDef, StorageError> {
         let x = self.items.get(table_name).map_err(StorageError::from)?;
 
         if let Some(slice) = x {

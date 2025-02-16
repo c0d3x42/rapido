@@ -1,12 +1,14 @@
 use super::*;
 
-pub struct StorageFile<'a> {
-    pub directory: &'a str,
+
+#[derive(Debug)]
+pub struct StorageFile {
+    pub directory: String
 }
 
 #[async_trait]
-impl<'a> ComponentInteraction for StorageFile<'a> {
-    async fn save(&self, table_def: TableDef) -> Result<(), StorageError> {
+impl ComponentInteraction for StorageFile {
+    async fn store(&self, table_def: TableDef) -> Result<(), StorageError> {
         let filename = format!("{}/{}.json", self.directory, table_def.info.name);
         let path = Path::new(&filename);
         let file = File::create(path).map_err(|_err| error::StorageError::Unhandled)?;
@@ -15,7 +17,7 @@ impl<'a> ComponentInteraction for StorageFile<'a> {
         Ok(())
     }
 
-    async fn load(&self, table_name: &str) -> Result<TableDef, StorageError> {
+    async fn fetch(&self, table_name: &str) -> Result<TableDef, StorageError> {
         let filename = format!("{}/{}.json", self.directory, table_name);
         let path = Path::new(&filename);
         let file = File::open(path).map_err(|_err| StorageError::Unhandled)?;
@@ -25,7 +27,7 @@ impl<'a> ComponentInteraction for StorageFile<'a> {
     }
 
     async fn index(&self) -> Result<Vec<String>, StorageError> {
-        let path = Path::new(self.directory);
+        let path = Path::new(&self.directory);
 
         let files: Vec<String> = fs::read_dir(&path)
             .map_err(|_err| StorageError::Unhandled)?

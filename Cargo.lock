@@ -3616,6 +3616,7 @@ name = "rapido-core"
 version = "0.0.3"
 dependencies = [
  "async-std",
+ "enum_dispatch",
  "fjall",
  "sea-orm",
  "sea-query",

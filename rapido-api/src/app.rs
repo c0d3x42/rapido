@@ -98,50 +98,16 @@ impl Hooks for App {
     }
 
     async fn after_routes(router: axum::Router, ctx: &AppContext) -> Result<axum::Router> {
-        /*
-        let items = models::_entities::component::Entity::find()
-            .all(&ctx.db)
-            .await?;
-         */
 
-        let dynamic = Dynamic {
-            db: Mutex::new(
-                SqliteDatabase::build(SqliteLocalConfig::default())
-                    .await
-                    .unwrap(),
-            ),
-            counter: 0,
-            components: Default::default(), /*
-                                               items
-                                               .into_iter()
-                                               .map(|item| {
-                                                   tracing::info!(
-                                                       "Loaded Component: [{}] {}",
-                                                       item.id,
-                                                       item.content.collection_name()
-                                                   );
-                                                   let component = item.content.0;
-                                                   component
-                                               })
-                                               .collect(),
-                                            */
-        };
-        let thing = Arc::new(dynamic);
-
-        let rapido_components = RapidoComponents::init_from_database(
+        let rapido_components = RapidoComponents::init_from_db_discovery(
             ctx.db.get_postgres_connection_pool().clone(),
             "public",
         )
         .await;
 
-        rapido_components
-            .get_all_table_names()
-            .iter()
-            .for_each(|table_name| {
-                tracing::info!("RapidoComponent: {table_name}");
-            });
         let rapido = Arc::new(Mutex::new(rapido_components));
-        Ok(router.layer(Extension(thing)).layer(Extension(rapido)))
+
+        Ok(router.layer(Extension(rapido)))
     }
 
     fn register_tasks(tasks: &mut Tasks) {

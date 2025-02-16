@@ -1,9 +1,8 @@
-use std::{collections::HashMap, iter::Map};
+use std::collections::HashMap;
 
 use sea_query::{
-    Alias, ColumnDef, ColumnType, Iden, IdenList, InsertStatement, IntoIden, PostgresQueryBuilder,
-    Query, SelectStatement, SimpleExpr, SqliteQueryBuilder, StringLen, Table, TableCreateStatement,
-    TableDropStatement, Value,
+    Alias, ColumnDef, ColumnType, Iden, IntoIden, PostgresQueryBuilder, SimpleExpr, StringLen,
+    Table, TableDropStatement, Value,
 };
 use sea_schema::postgres::{
     def::{Schema, TableDef, TableInfo, Type},
@@ -15,25 +14,42 @@ pub mod attribute;
 pub mod field;
 use attribute::Attribute;
 use serde_json::Value as JsonValue;
-use sqlx::{any::AnyArguments, postgres::PgQueryResult, PgPool};
+use sqlx::{any::AnyArguments, PgPool};
 
 use crate::{
     ddl::{column::Column, TableDefinition},
     error::{self, RapidoError},
-    seatraits::{Executable, Insertable},
+    storage::{self, kv::StorageKv, ComponentInteraction, StorageBacking},
 };
 
 use super::traits::Entity;
 
 #[derive(Debug)]
 pub struct RapidoComponents {
-    schema: Schema,
+    tables: Vec<TableDef>,
+    storage: Option<StorageBacking>,
 }
 
 impl RapidoComponents {
-    pub async fn init_from_database(pool: PgPool, schema: &str) -> Self {
+    pub fn new() -> Self {
+        Self {
+            tables: vec![],
+            storage: None,
+        }
+    }
+
+    pub async fn init_from_kv(storage: StorageKv) -> Self {
+        let tables = storage.fetch_all().await.expect("skv");
+
+        Self {
+            tables,
+            storage: Some(StorageBacking::Kv(storage)),
+        }
+    }
+
+    pub async fn init_from_db_discovery(pool: PgPool, schema: &str) -> Self {
         let schema_discovery = SchemaDiscovery::new(pool, schema);
-        let mut schema = schema_discovery
+        let schema = schema_discovery
             .discover()
             .await
             .expect("to discover tables in schema");
@@ -43,47 +59,48 @@ impl RapidoComponents {
             .into_iter()
             .filter(|p| p.info.name.starts_with("rapido_"))
             .collect();
-        schema.tables = tables;
 
-        tracing::debug!("discovered schemes {:#?}", schema);
-        RapidoComponents { schema }
+        RapidoComponents {
+            tables,
+            storage: None,
+        }
     }
 
     pub fn init_from_tables(tables: Vec<TableDef>, schema: &str) -> Self {
         Self {
-            schema: Schema {
-                schema: schema.to_string(),
-                tables,
-            },
+            tables,
+            storage: None,
         }
     }
 
     /**
      * add a new table to schema
      */
-    pub async fn add_table(&mut self, table_definition: TableDefinition, pool: PgPool) ->Result<(), RapidoError> {
-        let table_def :TableDef= table_definition.into();
+    pub async fn add_table(
+        &mut self,
+        table_definition: TableDefinition,
+        pool: PgPool,
+    ) -> Result<(), RapidoError> {
+        let table_def: TableDef = table_definition.into();
         let table_create_stmt = table_def.write();
         let stmt = table_create_stmt.build(PostgresQueryBuilder);
         let result = sqlx::query(&stmt).execute(&pool).await.and_then(|qr| {
-                tracing::debug!("create table row count = {}", qr.rows_affected());
-                self.schema.tables.push(table_def);
-                Ok(())
-
+            tracing::debug!("create table row count = {}", qr.rows_affected());
+            self.tables.push(table_def);
+            Ok(())
         });
 
         result.map_err(|err| err.into())
     }
 
     pub fn get_table_def(&self, table_name: &str) -> Option<&TableDef> {
-        self.schema
-            .tables
+        self.tables
             .iter()
             .find(|p| p.info.name == format!("rapido_{table_name}"))
     }
 
     pub fn get_all_table_def(&self) -> Vec<&TableDef> {
-        self.schema.tables.iter().map(|f| f).collect()
+        self.tables.iter().map(|f| f).collect()
     }
     pub fn get_all_table_names(&self) -> Vec<&str> {
         self.get_all_table_def()
@@ -92,11 +109,10 @@ impl RapidoComponents {
             .collect()
     }
 
-    pub fn get_component(&self, table_name: &str) -> Option<RapidoComponent>{
-
-        let component =self.get_table_def(table_name).map(|table_def| {
-            RapidoComponent::new(table_def)
-        });
+    pub fn get_component(&self, table_name: &str) -> Option<RapidoComponent> {
+        let component = self
+            .get_table_def(table_name)
+            .map(|table_def| RapidoComponent::new(table_def));
 
         component
     }
