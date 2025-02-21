@@ -13,6 +13,7 @@ use rapido_core::{
     seatraits::Executable,
     sql_executor::SqlExecutor,
     sql_generator::SqlGenerator,
+    Component, ComponentType,
 };
 use sea_orm::sea_query::{OnConflict, PostgresQueryBuilder};
 use sea_orm::sqlx;
@@ -70,16 +71,8 @@ pub async fn add(
 ) -> Result<Response> {
     let mut rapido_components = rapido_components.lock().await;
 
-    let table_name = format!("component:table:{}", params.content.table_name);
-    tracing::trace!("tbl {}", table_name);
-    let finder = Entity::find()
-        .filter(Column::Name.eq(table_name))
-        .one(&ctx.db)
-        .await?;
-    if let Some(model) = finder {
-        tracing::warn!("Model already exist: {:?}", model.name);
-        return format::json("already created");
-    }
+    let component = Component::from(&params.content);
+    tracing::debug!("Adding {:?}", component);
 
     let result = rapido_components
         .add_table(

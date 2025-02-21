@@ -1,15 +1,22 @@
-use std::{fmt::Display};
+use std::fmt::Display;
 
 use alter_table::AlterTableParams;
 use sea_query::{ColumnDef, Iden, IntoIden, Table, TableAlterStatement, TableCreateStatement};
-use sea_schema::{postgres::{def::{TableDef, TableInfo}, discovery::SchemaDiscovery}, sqlite::Sqlite};
+use sea_schema::{
+    postgres::{
+        def::{TableDef, TableInfo},
+        discovery::SchemaDiscovery,
+    },
+    sqlite::Sqlite,
+};
 use serde::{Deserialize, Serialize};
 pub mod alter_table;
+pub mod column;
 pub mod common;
 pub mod create_table;
-pub mod column;
 use column::Column;
 use sqlx::{PgPool, Pool, Postgres, SqlitePool};
+
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TableName(pub String);
@@ -29,7 +36,6 @@ impl From<&str> for TableName {
     }
 }
 
-
 /**
  * TableDefinition is the external format, i cut down of sea_schema::TableDef
  */
@@ -40,6 +46,8 @@ pub struct TableDefinition {
     pub table_name: TableName,
     pub columns: Vec<Column>,
 }
+
+
 impl TableDefinition {
     fn into_column_defs(&self) -> Vec<ColumnDef> {
         vec![]
@@ -60,14 +68,13 @@ impl From<TableDefinition> for TableDef {
                 name: format!(r#"rapido_{}"#, value.table_name.0),
                 of_type: None,
             },
-            columns: value.columns.iter().map(|column| column.into() ).collect(),
+            columns: value.columns.iter().map(|column| column.into()).collect(),
             check_constraints: Default::default(),
             not_null_constraints: Default::default(),
             unique_constraints: Default::default(),
             primary_key_constraints: Default::default(),
             reference_constraints: Default::default(),
-            exclusion_constraints: Default::default()
- 
+            exclusion_constraints: Default::default(),
         }
     }
 }
@@ -80,7 +87,6 @@ pub struct CreateTableAction {
 }
 impl CreateTableAction {
     pub fn into_table_create_statement(&self) -> TableCreateStatement {
-
         let table_def: TableDef = self.table_definition.clone().into();
 
         let mut stmt = table_def.write();
@@ -108,7 +114,7 @@ impl CreateTableDiscovery {
             .collect();
         tables
     }
-    pub async fn disco_def( dbpool: PgPool) -> Vec<TableDef> {
+    pub async fn disco_def(dbpool: PgPool) -> Vec<TableDef> {
         let discovery = SchemaDiscovery::new(dbpool, "public");
         let schema = discovery.discover().await.unwrap();
         schema.tables

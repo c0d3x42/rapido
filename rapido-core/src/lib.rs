@@ -2,21 +2,67 @@
 
 use std::fmt::Debug;
 
+use ddl::TableDefinition;
 use sqlx::{
     any::{AnyArguments, AnyRow},
     sqlite::SqliteArguments,
 };
 
+pub mod command_executor;
 pub mod component;
 pub mod database;
+pub mod ddl;
 pub mod error;
+pub mod json_api;
+pub mod seatraits;
 pub mod sql_executor;
 pub mod sql_generator;
-pub mod command_executor;
-pub mod seatraits;
-pub mod json_api;
-pub mod ddl;
 pub mod storage;
+
+#[derive(Debug, strum_macros::Display)]
+pub enum ComponentType {
+    Table,
+}
+
+#[derive(Debug)]
+pub struct Component {
+    label: String,
+    component_type: ComponentType,
+    name: String,
+}
+impl Component {
+    pub fn new(label: &str, component_type: ComponentType) -> Component {
+        let label = label.to_string();
+        let name = Self::normalize_name(&label);
+        Component {
+            label,
+            component_type,
+            name,
+        }
+    }
+
+    pub fn component_name(&self) -> String {
+        format!("component:{}:{}", self.component_type, self.name)
+    }
+
+    fn normalize_name(name: &str) -> String {
+        let mut name = name.trim().replace(" ", "-");
+        name.retain(|c| match c {
+            'a'..'z' => true,
+            '0'..'9' => true,
+            '-' => true,
+            '_' => true,
+            _ => false,
+        });
+        name
+    }
+}
+
+impl From<&TableDefinition> for Component {
+    fn from(value: &TableDefinition) -> Self {
+        Component::new(&value.table_name.0, ComponentType::Table)
+    }
+}
 
 pub enum DatabaseType {
     Sqlite,
