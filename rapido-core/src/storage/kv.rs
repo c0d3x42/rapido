@@ -5,7 +5,7 @@ use super::*;
 pub struct StorageKv {
     items: PartitionHandle,
 }
-impl Debug for StorageKv{
+impl Debug for StorageKv {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let p = self.items.path().display();
         f.write_str("kv")
@@ -30,9 +30,13 @@ impl ComponentInteraction for StorageKv {
     async fn store(&self, table_def: TableDef) -> Result<(), StorageError> {
         let s = serde_json::to_vec(&table_def).expect("seialize table");
         let table_name = format!("table_{}", table_def.info.name);
-        self.items
-            .insert(table_name, &s)
-            .map_err(StorageError::from)
+        Ok(self.items.insert(table_name, &s)?)
+    }
+
+    async fn store_component(&self, component: Component) -> Result<(), StorageError> {
+        let component_name = component.component_name();
+        let value = serde_json::to_vec(&component)?;
+        Ok(self.items.insert(component_name, value)?)
     }
     async fn fetch(&self, table_name: &str) -> Result<TableDef, StorageError> {
         let x = self.items.get(table_name).map_err(StorageError::from)?;

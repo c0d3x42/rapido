@@ -19,22 +19,23 @@ use sqlx::{any::AnyArguments, PgPool};
 use crate::{
     ddl::{column::Column, TableDefinition},
     error::{self, RapidoError},
-    storage::{self, kv::StorageKv, ComponentInteraction, StorageBacking},
+    storage::{self, kv::StorageKv, ComponentInteraction, StorageBacking}, Component,
 };
 
 use super::traits::Entity;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct RapidoComponents {
     tables: Vec<TableDef>,
+    components: Vec<Component>,
     storage: Option<StorageBacking>,
 }
+
 
 impl RapidoComponents {
     pub fn new() -> Self {
         Self {
-            tables: vec![],
-            storage: None,
+            ..Default::default()
         }
     }
 
@@ -44,6 +45,7 @@ impl RapidoComponents {
         Self {
             tables,
             storage: Some(StorageBacking::Kv(storage)),
+            ..Default::default()
         }
     }
 
@@ -63,13 +65,15 @@ impl RapidoComponents {
         RapidoComponents {
             tables,
             storage: None,
+            ..Default::default()
         }
     }
 
-    pub fn init_from_tables(tables: Vec<TableDef>, schema: &str) -> Self {
+    pub fn init_from_table_defs(tables: Vec<TableDef>, schema: &str) -> Self {
         Self {
             tables,
             storage: None,
+            ..Default::default()
         }
     }
 

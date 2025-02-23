@@ -12,6 +12,8 @@ use sea_orm::{
 };
 use sea_schema::postgres::def::TableDef;
 
+use crate::Component;
+
 mod database;
 mod file;
 pub mod kv;
@@ -23,6 +25,8 @@ pub trait ComponentInteraction {
      * stores a `TableDef`
      */
     async fn store(&self, table_def: TableDef) -> Result<(), error::StorageError>;
+
+    async fn store_component(&self, component: Component) -> Result<(), error::StorageError>;
     /**
      * fetches table definition for the named table
      */
@@ -51,24 +55,6 @@ pub enum StorageBacking {
     File(file::StorageFile),
     Kv(kv::StorageKv),
 }
-/*
-impl StorageBacking {
-    async fn fetch(&self, table_name: &str) -> Result<TableDef, StorageError> {
-        match self {
-            Self::Database(db) => db.fetch(table_name).await,
-            Self::File(f) => f.fetch(table_name).await,
-            Self::Kv(k) => k.fetch(table_name).await,
-        }
-    }
-    async fn store(&self, table_def: TableDef) -> Result<(), StorageError> {
-        match self {
-            Self::Database(d) => d.store(table_def).await,
-            Self::File(f) => f.store(table_def).await,
-            Self::Kv(k) => k.store(table_def).await,
-        }
-    }
-}
- */
 
 pub mod error {
     use thiserror::Error;

@@ -48,6 +48,10 @@ impl ComponentInteraction for StorageDatabase {
         Ok(())
     }
 
+    async fn store_component(&self, component: Component) -> Result<(), error::StorageError>{
+        todo!("store component")
+    }
+
     async fn fetch(&self, table_name: &str) -> Result<TableDef, error::StorageError> {
         let row = db::Entity::find()
             .filter(db::Column::TableName.eq(table_name))

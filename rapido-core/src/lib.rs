@@ -3,6 +3,8 @@
 use std::fmt::Debug;
 
 use ddl::TableDefinition;
+use sea_schema::postgres::def::TableDef;
+use serde::{Deserialize, Serialize};
 use sqlx::{
     any::{AnyArguments, AnyRow},
     sqlite::SqliteArguments,
@@ -19,15 +21,17 @@ pub mod sql_executor;
 pub mod sql_generator;
 pub mod storage;
 
-#[derive(Debug, strum_macros::Display)]
+#[derive(Debug, strum_macros::Display, Serialize,Deserialize)]
 pub enum ComponentType {
-    Table,
+    Table(TableDef),
+    View
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize,Deserialize)]
 pub struct Component {
     label: String,
     component_type: ComponentType,
+    /// normalized name
     name: String,
 }
 impl Component {
@@ -41,6 +45,9 @@ impl Component {
         }
     }
 
+    /**
+     * rapido qualified component name
+     */
     pub fn component_name(&self) -> String {
         format!("component:{}:{}", self.component_type, self.name)
     }
@@ -60,9 +67,11 @@ impl Component {
 
 impl From<&TableDefinition> for Component {
     fn from(value: &TableDefinition) -> Self {
-        Component::new(&value.table_name.0, ComponentType::Table)
+        Component::new(&value.table_name.0, ComponentType::Table(value.into_table_def()))
     }
-}
+} 
+
+
 
 pub enum DatabaseType {
     Sqlite,
