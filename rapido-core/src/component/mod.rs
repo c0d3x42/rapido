@@ -81,6 +81,9 @@ impl RapidoComponents {
         }
     }
 
+    /**
+     * create the components database table
+     */
     async fn create_component(component: &Component, pool: &PgPool) -> Result<(), RapidoError> {
         tracing::info!("creating component {}", component.component_name());
         let stmt = match &component.component_type {
