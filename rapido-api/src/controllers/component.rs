@@ -5,26 +5,11 @@ use std::sync::Arc;
 
 use axum::{debug_handler, Extension};
 use loco_rs::prelude::*;
-use migration::{IntoIden, SqliteQueryBuilder};
-use rapido_core::{
-    command_executor::CommandExecutor,
-    component::{ComponentSchema, ParsedComponent, RapidoComponents},
-    ddl::TableDefinition,
-    seatraits::Executable,
-    sql_executor::SqlExecutor,
-    sql_generator::SqlGenerator,
-    Component, ComponentType,
-};
-use sea_orm::sea_query::{OnConflict, PostgresQueryBuilder};
-use sea_orm::sqlx;
+use rapido_core::{component::RapidoComponents, ddl::TableDefinition, Component};
 use serde::{Deserialize, Serialize};
-use tap::Tap;
 use tokio::sync::Mutex;
 
-use crate::{
-    app::Dynamic,
-    models::_entities::component::{ActiveModel, Column, ComponentWrapper, Entity, Model},
-};
+use crate::models::_entities::component::{ActiveModel, ComponentWrapper, Entity, Model};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Params {
@@ -62,7 +47,9 @@ pub async fn list(
 }
 
 #[debug_handler]
-pub async fn partial_list(Extension(rapido_components): Extension<Arc<Mutex<RapidoComponents>>>)->Result<Response>{
+pub async fn partial_list(
+    Extension(rapido_components): Extension<Arc<Mutex<RapidoComponents>>>,
+) -> Result<Response> {
     let components = rapido_components.lock().await;
     let partials = components.list_partial_components();
 
@@ -81,7 +68,7 @@ pub async fn add(
     let component = Component::from(&params.content);
     tracing::debug!("Adding {:?}", component);
 
-    let result = rapido_components
+    let _result = rapido_components
         .add_component(component, ctx.db.get_postgres_connection_pool().clone())
         .await
         .map_err(|rapido_err| loco_rs::Error::Message(rapido_err.to_string()))?;

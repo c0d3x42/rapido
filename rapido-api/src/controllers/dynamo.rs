@@ -90,8 +90,6 @@ impl sqlx::FromRow<'_, SqliteRow> for RowContainer {
     fn from_row(row: &SqliteRow) -> std::result::Result<Self, sqlx::Error> {
         let mut map = HashMap::new();
 
-        for index in 0..row.len() {}
-
         for col in row.columns() {
             let name = col.name().to_string();
             map.insert(name.clone(), name);
@@ -102,8 +100,6 @@ impl sqlx::FromRow<'_, SqliteRow> for RowContainer {
 impl sqlx::FromRow<'_, PgRow> for RowContainer {
     fn from_row(row: &'_ PgRow) -> std::result::Result<Self, sqlx::Error> {
         let mut map = HashMap::new();
-
-        for index in 0..row.len() {}
 
         for col in row.columns() {
             let name = col.name().to_string();
