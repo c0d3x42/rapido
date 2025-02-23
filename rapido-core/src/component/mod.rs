@@ -40,7 +40,6 @@ impl RapidoComponents {
         }
     }
 
-    #[instrument]
     pub async fn init_from_kv(storage: StorageKv) -> Self {
 
         let tables = storage.fetch_all().await.expect("skv");
@@ -124,7 +123,6 @@ impl RapidoComponents {
         result.map_err(|err| err.into())
     }
 
-    #[instrument]
     pub async fn add_component(
         &mut self,
         component: Component,
