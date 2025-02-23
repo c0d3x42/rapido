@@ -15,11 +15,13 @@ pub mod field;
 use attribute::Attribute;
 use serde_json::Value as JsonValue;
 use sqlx::{any::AnyArguments, PgPool};
+use tracing::instrument;
 
 use crate::{
     ddl::{column::Column, TableDefinition},
     error::{self, RapidoError},
-    storage::{self, kv::StorageKv, ComponentInteraction, StorageBacking}, Component,
+    storage::{self, kv::StorageKv, ComponentInteraction, StorageBacking},
+    Component, ComponentType,
 };
 
 use super::traits::Entity;
@@ -31,7 +33,6 @@ pub struct RapidoComponents {
     storage: Option<StorageBacking>,
 }
 
-
 impl RapidoComponents {
     pub fn new() -> Self {
         Self {
@@ -39,12 +40,16 @@ impl RapidoComponents {
         }
     }
 
+    #[instrument]
     pub async fn init_from_kv(storage: StorageKv) -> Self {
+
         let tables = storage.fetch_all().await.expect("skv");
+        let components = storage.fetch_all_components().await.expect("components");
 
         Self {
             tables,
             storage: Some(StorageBacking::Kv(storage)),
+            components,
             ..Default::default()
         }
     }
@@ -77,6 +82,28 @@ impl RapidoComponents {
         }
     }
 
+    async fn create_component(component: &Component, pool: &PgPool) -> Result<(), RapidoError> {
+        tracing::info!("creating component {}", component.component_name());
+        let stmt = match &component.component_type {
+            ComponentType::Table(table_def) => table_def
+                .write()
+                .if_not_exists()
+                .build(PostgresQueryBuilder),
+            _ => todo!("unhandled component type"),
+        };
+
+        let query_result = sqlx::query(&stmt).execute(pool).await?;
+        Ok(())
+    }
+
+    pub async fn create_all_components(self, pool: PgPool) -> Result<Self, RapidoError> {
+        tracing::info!("creating components...");
+        for component in &self.components {
+            Self::create_component(component, &pool).await?;
+        }
+        Ok(self)
+    }
+
     /**
      * add a new table to schema
      */
@@ -97,10 +124,50 @@ impl RapidoComponents {
         result.map_err(|err| err.into())
     }
 
-    pub fn get_table_def(&self, table_name: &str) -> Option<&TableDef> {
-        self.tables
+    #[instrument]
+    pub async fn add_component(
+        &mut self,
+        component: Component,
+        pool: PgPool,
+    ) -> Result<(), RapidoError> {
+        Self::create_component(&component, &pool).await?;
+
+        if let Some(storage) = &self.storage {
+            tracing::info!("Storaging component");
+            storage.store_component(component.clone()).await?;
+        }
+
+        self.components.push(component);
+        Ok(())
+    }
+
+    pub async fn add_table_from_definition(
+        &mut self,
+        table_definition: TableDefinition,
+        pool: PgPool,
+    ) -> Result<(), RapidoError> {
+        let table_name = table_definition.table_name.clone();
+        let component =
+            Component::new(&table_name.0, ComponentType::Table(table_definition.into()));
+        Self::create_component(&component, &pool).await?;
+
+        self.components.push(component);
+        Ok(())
+    }
+
+    pub fn get_table_component(&self, table_name: &str) -> Option<&Component> {
+        let component_name = Component::to_component_table_name(table_name);
+        self.components
             .iter()
-            .find(|p| p.info.name == format!("rapido_{table_name}"))
+            .find(|component| component.component_name() == component_name)
+    }
+
+    pub fn get_table_def(&self, table_name: &str) -> Option<&TableDef> {
+        let component = self.get_table_component(table_name)?;
+        match &component.component_type {
+            ComponentType::Table(table_def) => Some(table_def),
+            _ => None,
+        }
     }
 
     pub fn get_all_table_def(&self) -> Vec<&TableDef> {
@@ -113,7 +180,7 @@ impl RapidoComponents {
             .collect()
     }
 
-    pub fn get_component(&self, table_name: &str) -> Option<RapidoComponent> {
+    pub fn get_tabledef_component(&self, table_name: &str) -> Option<RapidoComponent> {
         let component = self
             .get_table_def(table_name)
             .map(|table_def| RapidoComponent::new(table_def));

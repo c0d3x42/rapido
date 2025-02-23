@@ -6,6 +6,7 @@ use std::{
 use enum_dispatch::enum_dispatch;
 use error::StorageError;
 use fjall::{PartitionCreateOptions, PartitionHandle};
+use kv::StorageKv;
 use sea_orm::{
     prelude::async_trait::async_trait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
     SelectColumns,
@@ -32,6 +33,10 @@ pub trait ComponentInteraction {
      */
     async fn fetch(&self, table_name: &str) -> Result<TableDef, error::StorageError>;
 
+    async fn fetch_component(&self, name: &str) -> Result<Component, error::StorageError> {
+        todo!("fetch component")
+    }
+
     async fn fetch_all(&self) -> Result<Vec<TableDef>, StorageError> {
         let mut table_definitions = vec![];
         for table_name in self.index().await? {
@@ -42,10 +47,22 @@ pub trait ComponentInteraction {
         Ok(table_definitions)
     }
 
+    async fn fetch_all_components(&self) -> Result<Vec<Component>, StorageError> {
+        let mut components: Vec<Component> = vec![];
+        for name in self.index_component().await? {
+            components.push(self.fetch_component(&name).await?);
+        }
+        Ok(components)
+    }
+
     /**
      * retrieves the names of the tables
      */
     async fn index(&self) -> Result<Vec<String>, error::StorageError>;
+
+    async fn index_component(&self) -> Result<Vec<String>, StorageError> {
+        todo!("fetch index of components")
+    }
 }
 
 #[enum_dispatch]

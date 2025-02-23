@@ -64,7 +64,6 @@ pub async fn list(
 #[debug_handler]
 pub async fn add(
     State(ctx): State<AppContext>,
-    Extension(_dynamo): Extension<Arc<Dynamic>>,
     Extension(rapido_components): Extension<Arc<Mutex<RapidoComponents>>>,
 
     Json(params): Json<Params>,
@@ -75,52 +74,11 @@ pub async fn add(
     tracing::debug!("Adding {:?}", component);
 
     let result = rapido_components
-        .add_table(
-            params.content.clone(),
-            ctx.db.get_postgres_connection_pool().clone(),
-        )
-        .await;
-    if let Err(res) = result {
-        return format::json(format!("{res}"));
-    }
-    tracing::debug!("Add table: {:?}", result);
+        .add_component(component, ctx.db.get_postgres_connection_pool().clone())
+        .await
+        .map_err(|rapido_err| loco_rs::Error::Message(rapido_err.to_string()))?;
 
-    let mut item = ActiveModel {
-        ..Default::default()
-    };
-
-    params.update(&mut item);
-
-    let maybe_inserted = Entity::insert(item)
-        .on_conflict(
-            OnConflict::column(Column::Name)
-                .update_column(Column::Content)
-                .to_owned(),
-        )
-        .tap(|i| {
-            tracing::info!("I: {:#?}", i);
-        })
-        .exec(&ctx.db)
-        .await?;
-    tracing::info!("Maybe Inserted: {:#?}", maybe_inserted);
-
-    let row_id = maybe_inserted.last_insert_id;
-
-    let e = Entity::find_by_id(row_id)
-        .one(&ctx.db)
-        .await?
-        .map(|row| row.content);
-
-    if let Some(component_wrapper) = e {
-        let component = component_wrapper.0;
-
-        let pg_pool = ctx.db.get_postgres_connection_pool();
-        //let res = component.create_table(&pg_pool).await.unwrap();
-
-        format::json(format!("notdone"))
-    } else {
-        format::json(format!("error"))
-    }
+    format::json("done")
 }
 
 #[debug_handler]

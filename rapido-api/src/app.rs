@@ -21,8 +21,10 @@ use migration::Migrator;
 use rapido_core::{
     component::{CollectionName, RapidoComponents},
     database::{SqliteDatabase, SqliteLocalConfig},
+    storage::kv::StorageKv,
 };
 use tokio::sync::Mutex;
+use tracing::Instrument;
 
 use crate::{
     controllers,
@@ -98,12 +100,14 @@ impl Hooks for App {
     }
 
     async fn after_routes(router: axum::Router, ctx: &AppContext) -> Result<axum::Router> {
-
-        let rapido_components = RapidoComponents::init_from_db_discovery(
-            ctx.db.get_postgres_connection_pool().clone(),
-            "public",
-        )
-        .await;
+        tracing::info!("RapidoComponents...");
+        let storage =
+            StorageKv::new().map_err(|storage_err| loco_rs::Error::InternalServerError)?;
+        let rapido_components = RapidoComponents::init_from_kv(storage).await;
+        let rapido_components = rapido_components
+            .create_all_components(ctx.db.get_postgres_connection_pool().clone())
+            .await
+            .map_err(|rapid_err| loco_rs::Error::Message(rapid_err.to_string()))?;
 
         let rapido = Arc::new(Mutex::new(rapido_components));
 
@@ -127,8 +131,10 @@ impl Hooks for App {
     }
 
     async fn seed(ctx: &AppContext, base: &Path) -> Result<()> {
-        db::seed::<users::ActiveModel>(&ctx.db, &base.join("users.yaml").display().to_string()).await?;
-        db::seed::<notes::ActiveModel>(&ctx.db, &base.join("notes.yaml").display().to_string()).await?;
+        db::seed::<users::ActiveModel>(&ctx.db, &base.join("users.yaml").display().to_string())
+            .await?;
+        db::seed::<notes::ActiveModel>(&ctx.db, &base.join("notes.yaml").display().to_string())
+            .await?;
         Ok(())
     }
 }

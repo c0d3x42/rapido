@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+use crate::storage::error::StorageError;
+
 #[derive(Debug, Error)]
 pub enum RapidoError {
     #[error("db failed")]
@@ -9,5 +11,8 @@ pub enum RapidoError {
     SqlxError(#[from] sqlx::Error),
 
     #[error("not done")]
-    NotImplemented
+    NotImplemented,
+
+    #[error("storage")]
+    StorageError(#[from] StorageError)
 }

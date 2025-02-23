@@ -45,7 +45,7 @@ pub async fn insert_one(
     let pool = ctx.db.get_postgres_connection_pool();
 
     let component = components
-        .get_component(&component)
+        .get_tabledef_component(&component)
         .ok_or(loco_rs::Error::BadRequest("no component".to_string()))?;
     component
         .insert(object_map, pool)

@@ -1,6 +1,6 @@
 // https://github.com/thegenius/luna-orm/tree/main
 
-use std::fmt::Debug;
+use std::fmt::{format, Debug};
 
 use ddl::TableDefinition;
 use sea_schema::postgres::def::TableDef;
@@ -21,13 +21,13 @@ pub mod sql_executor;
 pub mod sql_generator;
 pub mod storage;
 
-#[derive(Debug, strum_macros::Display, Serialize,Deserialize)]
+#[derive(Debug, strum_macros::Display, Serialize, Deserialize, Clone)]
 pub enum ComponentType {
     Table(TableDef),
-    View
+    View,
 }
 
-#[derive(Debug, Serialize,Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Component {
     label: String,
     component_type: ComponentType,
@@ -52,6 +52,10 @@ impl Component {
         format!("component:{}:{}", self.component_type, self.name)
     }
 
+    pub fn to_component_table_name(name: &str) -> String {
+        format!("component:table:{}", name)
+    }
+
     fn normalize_name(name: &str) -> String {
         let mut name = name.trim().replace(" ", "-");
         name.retain(|c| match c {
@@ -67,11 +71,12 @@ impl Component {
 
 impl From<&TableDefinition> for Component {
     fn from(value: &TableDefinition) -> Self {
-        Component::new(&value.table_name.0, ComponentType::Table(value.into_table_def()))
+        Component::new(
+            &value.table_name.0,
+            ComponentType::Table(value.into_table_def()),
+        )
     }
-} 
-
-
+}
 
 pub enum DatabaseType {
     Sqlite,

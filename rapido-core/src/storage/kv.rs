@@ -39,15 +39,15 @@ impl ComponentInteraction for StorageKv {
         Ok(self.items.insert(component_name, value)?)
     }
     async fn fetch(&self, table_name: &str) -> Result<TableDef, StorageError> {
-        let x = self.items.get(table_name).map_err(StorageError::from)?;
-
-        if let Some(slice) = x {
-            let table_def: TableDef = serde_json::from_slice(&slice)?;
-            Ok(table_def)
-        } else {
-            Err(StorageError::NotFound)
-        }
+        let value = self.items.get(table_name)?.ok_or(StorageError::NotFound)?;
+        Ok(serde_json::from_slice(&value)?)
     }
+
+    async fn fetch_component(&self, name: &str) -> Result<Component, StorageError> {
+        let value = self.items.get(name)?.ok_or(StorageError::NotFound)?;
+        Ok(serde_json::from_slice(&value)?)
+    }
+
     async fn index(&self) -> Result<Vec<String>, StorageError> {
         let mut vs = Vec::new();
         for kv in self
@@ -62,6 +62,14 @@ impl ComponentInteraction for StorageKv {
                     .expect("string from prefix");
                 vs.push(x);
             }
+        }
+        Ok(vs)
+    }
+
+    async fn index_component(&self) -> Result<Vec<String>, StorageError> {
+        let mut vs = Vec::with_capacity(self.items.len()?);
+        for (key, _value) in self.items.prefix("component").filter_map(|x| x.ok()) {
+            vs.push(String::from_utf8(key.to_vec()).map_err(|_| StorageError::Unhandled)?);
         }
         Ok(vs)
     }
