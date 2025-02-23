@@ -6,7 +6,6 @@ use std::{
 use enum_dispatch::enum_dispatch;
 use error::StorageError;
 use fjall::{PartitionCreateOptions, PartitionHandle};
-use kv::StorageKv;
 use sea_orm::{
     prelude::async_trait::async_trait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
     SelectColumns,

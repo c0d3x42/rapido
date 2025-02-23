@@ -5,7 +5,7 @@ use sea_query::{
     Table, TableDropStatement, Value,
 };
 use sea_schema::postgres::{
-    def::{Schema, TableDef, TableInfo, Type},
+    def::{TableDef, TableInfo, Type},
     discovery::SchemaDiscovery,
 };
 use serde::{Deserialize, Serialize};
@@ -15,12 +15,12 @@ pub mod field;
 use attribute::Attribute;
 use serde_json::Value as JsonValue;
 use sqlx::{any::AnyArguments, PgPool};
-use tracing::instrument;
 
 use crate::{
     ddl::{column::Column, TableDefinition},
     error::{self, RapidoError},
-    storage::{self, kv::StorageKv, ComponentInteraction, StorageBacking},
+    json_api::PartialComponent,
+    storage::{kv::StorageKv, ComponentInteraction, StorageBacking},
     Component, ComponentType,
 };
 
@@ -41,7 +41,6 @@ impl RapidoComponents {
     }
 
     pub async fn init_from_kv(storage: StorageKv) -> Self {
-
         let tables = storage.fetch_all().await.expect("skv");
         let components = storage.fetch_all_components().await.expect("components");
 
@@ -95,6 +94,7 @@ impl RapidoComponents {
         };
 
         let query_result = sqlx::query(&stmt).execute(pool).await?;
+        tracing::info!("QR: {:?}", query_result);
         Ok(())
     }
 
@@ -187,6 +187,17 @@ impl RapidoComponents {
             .map(|table_def| RapidoComponent::new(table_def));
 
         component
+    }
+
+    pub fn list_partial_components(&self) -> Vec<PartialComponent> {
+        self.components
+            .iter()
+            .map(|component| PartialComponent {
+                label: &component.label,
+                name: &component.name,
+                component_name: component.component_name(),
+            })
+            .collect()
     }
 }
 

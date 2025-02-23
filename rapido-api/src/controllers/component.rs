@@ -62,6 +62,14 @@ pub async fn list(
 }
 
 #[debug_handler]
+pub async fn partial_list(Extension(rapido_components): Extension<Arc<Mutex<RapidoComponents>>>)->Result<Response>{
+    let components = rapido_components.lock().await;
+    let partials = components.list_partial_components();
+
+    format::json(partials)
+}
+
+#[debug_handler]
 pub async fn add(
     State(ctx): State<AppContext>,
     Extension(rapido_components): Extension<Arc<Mutex<RapidoComponents>>>,
@@ -133,6 +141,7 @@ pub async fn get_one(Path(id): Path<i32>, State(ctx): State<AppContext>) -> Resu
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("api/components")
+        .add("/list", get(partial_list))
         .add("/", get(list))
         .add("/", post(add))
         .add("/{id}", get(get_one))

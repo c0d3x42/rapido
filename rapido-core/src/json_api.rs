@@ -86,3 +86,10 @@ pub struct Constraints {
     pub primaryKey: Option<bool>,
     pub nullable: Option<bool>
 }
+
+#[derive(Debug,Serialize)]
+pub struct PartialComponent<'a> {
+    pub label: &'a str,
+    pub name: &'a str,
+    pub component_name: String
+}

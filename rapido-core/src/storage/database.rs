@@ -8,7 +8,7 @@ mod db {
     #[derive(Debug, Clone, FromJsonQueryResult, Serialize, Deserialize)]
     pub struct ComponentWrapper(pub(crate) TableDef);
     impl PartialEq for ComponentWrapper {
-        fn eq(&self, other: &Self) -> bool {
+        fn eq(&self, _other: &Self) -> bool {
             return false;
         }
     }
@@ -48,7 +48,7 @@ impl ComponentInteraction for StorageDatabase {
         Ok(())
     }
 
-    async fn store_component(&self, component: Component) -> Result<(), error::StorageError>{
+    async fn store_component(&self, _component: Component) -> Result<(), error::StorageError>{
         todo!("store component")
     }
 

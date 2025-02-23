@@ -16,7 +16,7 @@ impl ComponentInteraction for StorageFile {
         serde_json::to_writer(file, &table_def).expect("to write json file");
         Ok(())
     }
-    async fn store_component(&self, component: Component) -> Result<(), error::StorageError>{
+    async fn store_component(&self, _component: Component) -> Result<(), error::StorageError>{
         todo!("store component")
     }
 

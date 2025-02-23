@@ -1,7 +1,7 @@
 use std::{fmt::Debug, ops::{Deref, DerefMut}, str::FromStr};
 
 use sqlx::{
-    any::{AnyArguments, AnyConnectOptions, AnyQueryResult}, sqlite::SqliteConnectOptions, AnyPool
+    any::{AnyArguments, AnyConnectOptions, AnyQueryResult}, AnyPool
 };
 
 

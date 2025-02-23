@@ -7,19 +7,15 @@ pub struct StorageKv {
 }
 impl Debug for StorageKv {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let p = self.items.path().display();
+        let _p = self.items.path().display();
         f.write_str("kv")
     }
 }
 
 impl StorageKv {
     pub fn new() -> Result<Self, StorageError> {
-        let keyspace = fjall::Config::new("./fjall")
-            .open()
-            .map_err(|err| StorageError::Unhandled)?;
-        let items = keyspace
-            .open_partition("components", PartitionCreateOptions::default())
-            .map_err(|err| StorageError::Unhandled)?;
+        let keyspace = fjall::Config::new("./fjall").open()?;
+        let items = keyspace.open_partition("components", PartitionCreateOptions::default())?;
 
         Ok(Self { items })
     }
@@ -54,7 +50,7 @@ impl ComponentInteraction for StorageKv {
             .items
             .prefix::<&str>("table_")
             .filter_map(|x| x.ok())
-            .map(|(k, v)| k)
+            .map(|(k, _v)| k)
         {
             if let Some(s) = kv.strip_prefix("table_".as_bytes()) {
                 let x = std::str::from_utf8(s)
