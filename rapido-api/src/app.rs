@@ -1,7 +1,4 @@
-use std::{
-    path::Path,
-    sync::Arc ,
-};
+use std::{path::Path, sync::Arc};
 
 use async_trait::async_trait;
 use axum::Extension;
@@ -9,29 +6,20 @@ use loco_rs::{
     app::{AppContext, Hooks},
     bgworker::{BackgroundWorker, Queue},
     boot::{create_app, BootResult, StartMode},
-    config::{Config},
+    config::Config,
     controller::AppRoutes,
     db::{self, truncate_table},
     environment::Environment,
-    prelude::*,
     task::Tasks,
     Result,
 };
 use migration::Migrator;
-use rapido_core::{
-    component::{RapidoComponents},
-    database::{SqliteDatabase },
-    storage::kv::StorageKv,
-};
+use rapido_core::{component::RapidoComponents, database::SqliteDatabase, storage::kv::StorageKv};
 use tokio::sync::Mutex;
-use tracing::Instrument;
 
 use crate::{
     controllers,
-    models::{
-        self,
-        _entities::{notes, users},
-    },
+    models::_entities::{notes, users},
     tasks,
     workers::downloader::DownloadWorker,
 };
@@ -102,7 +90,7 @@ impl Hooks for App {
     async fn after_routes(router: axum::Router, ctx: &AppContext) -> Result<axum::Router> {
         tracing::info!("RapidoComponents...");
         let storage =
-            StorageKv::new().map_err(|storage_err| loco_rs::Error::InternalServerError)?;
+            StorageKv::new().map_err(|_storage_err| loco_rs::Error::InternalServerError)?;
         let rapido_components = RapidoComponents::init_from_kv(storage).await;
         let rapido_components = rapido_components
             .create_all_components(ctx.db.get_postgres_connection_pool().clone())

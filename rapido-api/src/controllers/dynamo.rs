@@ -27,7 +27,6 @@ impl Params {
     }
 }
 
-
 #[debug_handler]
 pub async fn insert_one(
     Path(component): Path<String>,
@@ -112,7 +111,7 @@ impl sqlx::FromRow<'_, PgRow> for RowContainer {
 #[debug_handler]
 pub async fn get_one(
     Path((component, id)): Path<(String, i32)>,
-    State(ctx): State<AppContext>,
+    State(_ctx): State<AppContext>,
 ) -> Result<Response> {
     tracing::info!("Dynamo Path: {component}, {id}");
     format::json(())
