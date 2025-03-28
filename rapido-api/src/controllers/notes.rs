@@ -3,7 +3,6 @@
 #![allow(clippy::unused_async)]
 use axum::debug_handler;
 use loco_rs::prelude::*;
-use migration::PostgresQueryBuilder;
 use serde::{Deserialize, Serialize};
 
 use crate::models::_entities::notes::{ActiveModel, Entity, Model};

@@ -72,7 +72,7 @@ impl RapidoComponents {
         }
     }
 
-    pub fn init_from_table_defs(tables: Vec<TableDef>, schema: &str) -> Self {
+    pub fn init_from_table_defs(tables: Vec<TableDef>, _schema: &str) -> Self {
         Self {
             tables,
             storage: None,

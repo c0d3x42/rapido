@@ -29,8 +29,8 @@ impl Attribute {
 
     pub fn into_field_type(&self) -> FieldType {
         match self {
-            Attribute::String(v) => FieldType::String,
-            Attribute::Integer(v) => FieldType::Numeric
+            Attribute::String(_v) => FieldType::String,
+            Attribute::Integer(_v) => FieldType::Numeric
         }
     }
 }

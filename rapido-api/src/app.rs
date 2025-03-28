@@ -1,6 +1,6 @@
 use std::{
     path::Path,
-    sync::{Arc, RwLock},
+    sync::Arc ,
 };
 
 use async_trait::async_trait;
@@ -9,7 +9,7 @@ use loco_rs::{
     app::{AppContext, Hooks},
     bgworker::{BackgroundWorker, Queue},
     boot::{create_app, BootResult, StartMode},
-    config::{self, Config},
+    config::{Config},
     controller::AppRoutes,
     db::{self, truncate_table},
     environment::Environment,
@@ -19,8 +19,8 @@ use loco_rs::{
 };
 use migration::Migrator;
 use rapido_core::{
-    component::{CollectionName, RapidoComponents},
-    database::{SqliteDatabase, SqliteLocalConfig},
+    component::{RapidoComponents},
+    database::{SqliteDatabase },
     storage::kv::StorageKv,
 };
 use tokio::sync::Mutex;

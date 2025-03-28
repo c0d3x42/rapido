@@ -2,12 +2,9 @@ use std::fmt::Display;
 
 use alter_table::AlterTableParams;
 use sea_query::{ColumnDef, Iden, IntoIden, Table, TableAlterStatement, TableCreateStatement};
-use sea_schema::{
-    postgres::{
-        def::{TableDef, TableInfo},
-        discovery::SchemaDiscovery,
-    },
-    sqlite::Sqlite,
+use sea_schema::postgres::{
+    def::{TableDef, TableInfo},
+    discovery::SchemaDiscovery,
 };
 use serde::{Deserialize, Serialize};
 pub mod alter_table;
@@ -15,8 +12,7 @@ pub mod column;
 pub mod common;
 pub mod create_table;
 use column::Column;
-use sqlx::{PgPool, Pool, Postgres, SqlitePool};
-
+use sqlx::PgPool;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TableName(pub String);
@@ -30,6 +26,7 @@ impl Display for TableName {
         write!(f, "{}", self.0)
     }
 }
+
 impl From<&str> for TableName {
     fn from(value: &str) -> Self {
         TableName(value.to_string())
@@ -46,7 +43,6 @@ pub struct TableDefinition {
     pub table_name: TableName,
     pub columns: Vec<Column>,
 }
-
 
 impl TableDefinition {
     fn into_column_defs(&self) -> Vec<ColumnDef> {

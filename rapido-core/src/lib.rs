@@ -1,6 +1,6 @@
 // https://github.com/thegenius/luna-orm/tree/main
 
-use std::fmt::{format, Debug};
+use std::fmt::Debug;
 
 use ddl::TableDefinition;
 use sea_schema::postgres::def::TableDef;

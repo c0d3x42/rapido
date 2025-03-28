@@ -32,7 +32,7 @@ pub trait ComponentInteraction {
      */
     async fn fetch(&self, table_name: &str) -> Result<TableDef, error::StorageError>;
 
-    async fn fetch_component(&self, name: &str) -> Result<Component, error::StorageError> {
+    async fn fetch_component(&self, _name: &str) -> Result<Component, error::StorageError> {
         todo!("fetch component")
     }
 

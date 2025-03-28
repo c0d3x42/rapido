@@ -78,15 +78,15 @@ impl ColumnType {
         match self {
             ColumnType::VarChar {
                 length,
-                default_value,
+                default_value: _,
             } => sea_query::ColumnType::String(sea_query::StringLen::N(*length)),
             ColumnType::Number {
-                length,
-                default_value,
+                length: _,
+                default_value: _,
             } => sea_query::ColumnType::Integer,
             ColumnType::Date {
-                format,
-                default_value,
+                format: _,
+                default_value: _,
             } => sea_query::ColumnType::Date,
         }
     }
@@ -96,8 +96,8 @@ impl Into<sea_schema::postgres::def::Type> for ColumnType {
     fn into(self) -> sea_schema::postgres::def::Type {
         match self {
             ColumnType::VarChar {
-                length,
-                default_value,
+                length: _,
+                default_value: _,
             } => sea_schema::postgres::def::Type::Varchar(StringAttr::default()),
             _ => sea_schema::postgres::def::Type::Varchar(StringAttr::default()),
         }

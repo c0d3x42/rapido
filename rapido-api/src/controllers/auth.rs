@@ -54,6 +54,7 @@ async fn register(
 
     AuthMailer::send_welcome(&ctx, &user).await?;
 
+
     format::json(())
 }
 
