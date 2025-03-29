@@ -23,16 +23,16 @@ rapido-core = { path = './rapido-core' }
 
 [workspace.dependencies]
 anyhow      = { version = "1.0.96" }
-sea-query = { version="0.32.2", features = ["with-json"] }
+sea-query = { version="0.32.3", features = ["with-json"] }
 sea-schema = { version = "0.16.1", features = ["sqlx", "with-serde"] }
 
-serde_json = { version = "1.0.139", features = ["indexmap"] }
-serde = { version = "1.0.218", features = ["derive", "rc"] }
+serde_json = { version = "1.0.140", features = ["indexmap"] }
+serde = { version = "1.0.219", features = ["derive", "rc"] }
 serde_with = "3.12.0"
 sqlx = { version = "0.8.3", features = ["runtime-async-std", "sqlite", "postgres"] }
 thiserror = { version="1"}
 tracing = { version="0.1.41"}
-sea-orm = { version = "1.1.5", features = [
+sea-orm = { version = "1.1.7", features = [
   "sqlx-postgres",
   "runtime-tokio-rustls",
   "macros",

@@ -9,7 +9,7 @@ repository = "https://github.com/c0d3x42/rapido"
 
 
 [dependencies]
-async-std = { version = "1.13.0", features = ["attributes"] }
+async-std = { version = "1.13.1", features = ["attributes"] }
 serde = {workspace = true}
 serde_json = {workspace = true}
 serde_with = {workspace = true}
@@ -18,7 +18,7 @@ sea-schema = { workspace = true, features=["with-serde", "sqlx-all"] }
 sqlx = { workspace = true  }
 tracing = { workspace = true }
 thiserror = {workspace = true}
-sea-orm = { version = "1.1.5", features = [
+sea-orm = { version = "1.1.7", features = [
   "sqlx-sqlite",
   "sqlx-postgres",
   "runtime-tokio-rustls",
@@ -26,7 +26,7 @@ sea-orm = { version = "1.1.5", features = [
   "with-json",
   "debug-print"
 ] }
-fjall = "2.6.5"
+fjall = "2.7.2"
 enum_dispatch = "0.3.13"
 strum = { version = "0.27.1", features = ["derive"] }
 strum_macros = "0.27.1"
