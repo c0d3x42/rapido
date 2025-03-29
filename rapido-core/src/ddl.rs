@@ -97,7 +97,7 @@ impl CreateTableDiscovery {
     pub async fn discover(schema_name: &str, dbpool: PgPool) -> Vec<TableCreateStatement> {
         let schema_discovery = SchemaDiscovery::new(dbpool, schema_name);
         let schema = schema_discovery.discover().await.unwrap();
-        let js: Vec<String> = schema
+        let _js: Vec<String> = schema
             .tables
             .iter()
             .map(|t| serde_json::to_string_pretty(t).unwrap())

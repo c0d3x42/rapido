@@ -1,3 +1,3 @@
-mod database;
+pub mod database;
 
 pub use rapido_core::*;

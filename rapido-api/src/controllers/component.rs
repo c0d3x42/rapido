@@ -32,7 +32,7 @@ async fn load_item(ctx: &AppContext, id: i32) -> Result<Model> {
 
 #[debug_handler]
 pub async fn list(
-    State(ctx): State<AppContext>,
+    State(_ctx): State<AppContext>,
     Extension(rapido_components): Extension<Arc<Mutex<RapidoComponents>>>,
 ) -> Result<Response> {
     let components = rapido_components.lock().await;
